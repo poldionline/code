@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verschlüsselungs-Werkstatt</title>
+<style>
+:root{--bg:#f3f4f1;--card:#fff;--tx:#1d2320;--mut:#66706a;--ac:#5c7f1f;--ac2:#e8f0d8;--bd:#d9ddd5;--warn:#fff4d6;--warnb:#e5c46a;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#161a17;--card:#1f2521;--tx:#e8ece6;--mut:#9aa59d;--ac:#9cc84b;--ac2:#2a3522;--bd:#333c35;--warn:#3a321a;--warnb:#7a6428}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:#555;color:#fff;padding:14px 20px;border-bottom:6px solid #6b8e23}
+header h1{margin:0;font-size:22px}
+header p{margin:2px 0 0;color:#ddd;font-size:14px}
+.wrap{display:flex;gap:16px;max-width:1300px;margin:0 auto;padding:16px}
+nav{width:250px;flex:none}
+nav input{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);margin-bottom:8px}
+#list{display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 150px);overflow:auto;position:sticky;top:8px}
+#list button{text-align:left;border:0;background:transparent;color:var(--tx);padding:8px 10px;border-radius:8px;font:inherit;cursor:pointer}
+#list button:hover{background:var(--ac2)}
+#list button.on{background:var(--ac);color:#fff}
+main{flex:1;min-width:0}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 4px}
+.teaser{color:var(--mut);margin:0 0 10px}
+.warn{background:var(--warn);border:1px solid var(--warnb);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:14px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px}
+textarea,input[type=text],input[type=number],select{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:15px var(--mono)}
+textarea{min-height:90px;resize:vertical}
+.params{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 12px}
+.params .chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px;color:var(--tx)}
+.params .chk input{width:auto}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+button.b{border:1px solid var(--ac);background:var(--card);color:var(--ac);padding:8px 14px;border-radius:8px;font:inherit;cursor:pointer}
+button.b.on{background:var(--ac);color:#fff}
+button.b:disabled{opacity:.35;cursor:not-allowed}
+pre#out{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;font:15px var(--mono);min-height:60px;margin:0}
+.expl h3{margin:16px 0 4px;font-size:16px;color:var(--ac)}
+.expl p,.expl li{margin:3px 0}
+.expl code{background:var(--bg);padding:1px 5px;border-radius:4px;font-family:var(--mono)}
+details summary{cursor:pointer;color:var(--ac)}
+.stage{background:#2b302c;color:#fff;border-radius:12px;padding:22px 16px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+.stage .big{font:600 30px var(--mono);word-break:break-all}
+.stage .arrow{font-size:26px;opacity:.7}
+.stage .note{font-size:17px;max-width:640px;line-height:1.45}
+.stage .tag{font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.6}
+.bar{height:6px;background:var(--bd);border-radius:3px;margin:10px 0;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ac);width:0;transition:width .3s}
+.pix{display:grid;gap:2px;margin-top:10px}
+.pix i{width:14px;height:14px;background:var(--bd);border-radius:2px}
+.pix i.on{background:var(--tx)}
+table.g{border-collapse:collapse;margin-top:10px;font-family:var(--mono)}
+table.g td{border:1px solid var(--bd);padding:3px 9px;text-align:center}
+.fr{display:flex;align-items:center;gap:8px;font:14px var(--mono)}
+.fr b{width:20px}
+.fr span{display:inline-block;height:12px;background:var(--ac);border-radius:3px}
+#sel{display:none;width:100%;margin-bottom:10px}
+@media(max-width:820px){.wrap{flex-direction:column;padding:10px}nav{width:100%}#list,nav input{display:none}#sel{display:block}}
+</style>
+</head>
+<body>
+<header><h1>🔐 Verschlüsselungs-Werkstatt</h1><p>38 Verfahren – verschlüsseln, entschlüsseln, verstehen. Jede Methode hat eine ausführliche Erklärung und eine animierte Schritt-für-Schritt-Vorführung.</p></header>
+<div class="wrap">
+<nav><input id="q" placeholder="Verfahren suchen …"><select id="sel"></select><div id="list"></div></nav>
+<main>
+<div class="card">
+ <h2 id="title"></h2><p class="teaser" id="teaser"></p>
+ <div id="warn"></div>
+ <div class="row" id="dirs"><button class="b on" id="bEnc">Verschlüsseln</button><button class="b" id="bDec">Entschlüsseln</button><button class="b" id="bEx">Beispiel</button><button class="b" id="bSwap" title="Ergebnis als neue Eingabe verwenden">⇄ Ergebnis → Eingabe</button></div>
+ <div class="params" id="params"></div>
+ <label for="inp">Eingabe</label><textarea id="inp" spellcheck="false"></textarea>
+ <label>Ergebnis</label><pre id="out"></pre>
+ <div id="extra"></div>
+ <div class="row"><button class="b" id="bCopy">📋 Kopieren</button><span id="acts"></span><span id="msg" style="color:var(--mut);font-size:14px"></span></div>
+</div>
+<div class="card">
+ <h2>🎬 Animierte Erklärung</h2>
+ <p class="teaser">Erst die Idee in Kurzschritten, danach dein eigener Text Schritt für Schritt.</p>
+ <div class="stage" id="stage"></div>
+ <div class="bar"><i id="prog"></i></div>
+ <div class="row"><button class="b" id="tPrev">⏮</button><button class="b on" id="tPlay">▶ Abspielen</button><button class="b" id="tNext">⏭</button>
+  <select id="tSpeed" style="width:auto"><option value="3200">langsam</option><option value="2000" selected>normal</option><option value="1000">schnell</option></select>
+  <label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="tSpeak" style="width:auto"> vorlesen</label></div>
+</div>
+<div class="card expl" id="expl"></div>
+</main>
+</div>
+<script>
+// =====================================================================
+//  Basis
+// =====================================================================
+const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const mod=(a,n)=>((a%n)+n)%n;
+const norm=s=>s.toUpperCase().replace(/Ä/g,'AE').replace(/Ö/g,'OE').replace(/Ü/g,'UE').replace(/ß/g,'SS');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const R=(out,steps,extra)=>Object.assign({out:out,steps:steps||[]},extra||{});
+const toBytes=t=>Array.from(new TextEncoder().encode(t));
+const fromBytes=b=>new TextDecoder().decode(new Uint8Array(b));
+const sp=ch=>ch===' '?'␠':(ch==='\n'?'↵':ch);
+const X=(idee,schritte,bsp,hist,sich)=>({how:schritte,html:'<h3>Die Idee</h3><p>'+idee+'</p><h3>So funktioniert es</h3><ol>'+schritte.map(s=>'<li>'+s+'</li>').join('')+'</ol><h3>Beispiel</h3><p>'+bsp+'</p><h3>Hintergrund</h3><p>'+hist+'</p><h3>Sicherheit &amp; Tipps</h3><p>'+sich+'</p>'});
+
+// Schlüsselquadrat 5x5 (J = I)
+function keySquare(key){let s='';const src=norm(key||'').replace(/J/g,'I')+A.replace('J','');for(const ch of src){if(/[A-Z]/.test(ch)&&!s.includes(ch))s+=ch;}return s;}
+
+// Brainfuck-artige Maschine (+ - > < [ ] . , sowie Z=null, C=COW-Moo, N=Zahl ausgeben, I=Zahl lesen)
+function bfRun(code,input,limit){
+  limit=limit||3000000;const tape=new Uint8Array(30000);let p=0,ip=0,inp=0,steps=0;const out=[];const jump={},stack=[];
+  for(let i=0;i<code.length;i++){const c=code[i];if(c==='[')stack.push(i);else if(c===']'){if(!stack.length)return {out:'',err:'Fehler: ] ohne passendes [ (Position '+i+').'};const j=stack.pop();jump[i]=j;jump[j]=i;}}
+  if(stack.length)return {out:'',err:'Fehler: [ ohne passendes ].'};
+  const rd=()=>inp<input.length?input.charCodeAt(inp++)&255:0;
+  while(ip<code.length){
+    if(++steps>limit)return {out:fromBytes(out),err:'Abbruch: Programm läuft zu lange (Endlosschleife?).'};
+    switch(code[ip]){
+      case '+':tape[p]++;break;case '-':tape[p]--;break;
+      case '>':p=(p+1)%30000;break;case '<':p=(p+29999)%30000;break;
+      case '.':out.push(tape[p]);break;
+      case ',':tape[p]=rd();break;
+      case '[':if(!tape[p])ip=jump[ip];break;
+      case ']':if(tape[p])ip=jump[ip];break;
+      case 'Z':tape[p]=0;break;
+      case 'C':if(tape[p]===0)tape[p]=rd();else out.push(tape[p]);break;
+      case 'N':for(const ch of String(tape[p]))out.push(ch.charCodeAt(0));break;
+      case 'I':{const m=/-?\d+/.exec(input.slice(inp));if(m){inp+=m.index+m[0].length;tape[p]=+m[0];}else tape[p]=0;break;}
+    }
+    ip++;
+  }
+  return {out:fromBytes(out)};
+}
+// Text -> Brainfuck-Programm
+function bfGenerate(t){
+  const bytes=toBytes(t);let prog='>';let cur=0;const st=[];
+  for(const b of bytes){
+    let d=mod(b-cur+128,256)-128;const sg=d>=0?'+':'-';const ad=Math.abs(d);let seg='';
+    if(ad<=12){seg=sg.repeat(ad)+'.';}
+    else{const a=Math.round(Math.sqrt(ad));const q=Math.floor(ad/a);const r=ad-a*q;seg='<'+'+'.repeat(a)+'[>'+sg.repeat(q)+'<-]>'+sg.repeat(r)+'.';}
+    prog+=seg;cur=b;
+  }
+  return prog;
+}
+const BF2OOK={'+':'Ook. Ook.','-':'Ook! Ook!','>':'Ook. Ook?','<':'Ook? Ook.','[':'Ook! Ook?',']':'Ook? Ook!','.':'Ook! Ook.',',':'Ook. Ook!'};
+const OOK2BF={};for(const k in BF2OOK)OOK2BF[BF2OOK[k]]=k;
+const BF2COW={'+':'MoO','-':'MOo','>':'moO','<':'mOo','[':'MOO',']':'moo','.':'Moo'};
+const COW2BF={moo:']',mOo:'<',moO:'>',mOO:'',Moo:'C',MOo:'-',MoO:'+',MOO:'[',OOO:'Z',MMM:'',OOM:'N',oom:'I'};
+
+// Beatnik
+const SCR={A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10};
+const wscore=w=>[...w.toUpperCase()].reduce((s,c)=>s+(SCR[c]||0),0);
+function bword(n,seed){
+  const pools={10:'QZ',8:'JX',5:'K',4:'FHVWY',3:'BCMP',2:'DG',1:'AEILNORSTU'};const vals=[10,8,5,4,3,2,1];
+  let w='',r=n,s=(seed*7919+n*104729)%2147483647;
+  while(r>0){s=(s*1103515245+12345)&0x7fffffff;const cand=vals.filter(v=>v<=r);const v=cand[(s>>4)%Math.min(cand.length,4)];const pl=pools[v];w+=pl[(s>>9)%pl.length];r-=v;}
+  return w.toLowerCase();
+}
+function beatnikRun(src,input){
+  const words=src.split(/[^A-Za-z]+/).filter(Boolean).map(wscore);const stack=[];const out=[];let i=0,inp=0,n=0;
+  while(i<words.length){
+    if(++n>200000)return {out:fromBytes(out),err:'Abbruch: zu viele Schritte.'};
+    const s=words[i];
+    const pop=()=>stack.length?stack.pop():0;
+    if(s===5){stack.push(words[i+1]||0);i+=2;continue;}
+    if(s===6)pop();
+    else if(s===7)stack.push((pop()+pop())&0xffffffff);
+    else if(s===8)stack.push(inp<input.length?input.charCodeAt(inp++)&255:0);
+    else if(s===9)out.push(pop()&255);
+    else if(s===10){const a=pop(),b=pop();stack.push(b-a);}
+    else if(s===11){const a=pop(),b=pop();stack.push(a);stack.push(b);}
+    else if(s===12){const a=pop();stack.push(a);stack.push(a);}
+    else if(s===13){const a=pop();const k=words[i+1]||0;if(a===0){i+=1+k;}else i++;i++;continue;}
+    else if(s===14){const a=pop();const k=words[i+1]||0;if(a!==0){i+=1+k;}else i++;i++;continue;}
+    else if(s===15){const k=words[i+1]||0;i=Math.max(0,i-k);continue;}
+    else if(s===16){const k=words[i+1]||0;i+=1+k;i++;continue;}
+    else if(s===17)break;
+    i++;
+  }
+  return {out:fromBytes(out)};
+}
+
+// Morse
+const MORSE={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',Ä:'.-.-',Ö:'---.',Ü:'..--',0:'-----',1:'.----',2:'..---',3:'...--',4:'....-',5:'.....',6:'-....',7:'--...',8:'---..',9:'----.','.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--',':':'---...',';':'-.-.-.','-':'-....-','/':'-..-.','(':'-.--.',')':'-.--.-','@':'.--.-.','=':'-...-','+':'.-.-.','"':'.-..-.',"'":'.----.'};
+const MORSE_INV={};for(const k in MORSE)MORSE_INV[MORSE[k]]=k;
+function morseDecode(t){
+  t=t.replace(/[•·]/g,'.').replace(/[−–—_]/g,'-');
+  return t.trim().split(/\s*[\/|]\s*|\s{3,}|\n/).map(w=>w.trim().split(/\s+/).map(c=>MORSE_INV[c]||(c?'?':'')).join('')).join(' ');
+}
+
+// Römische Zahlen
+const ROM=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+function toRoman(n){let s='';const parts=[];for(const [v,r] of ROM){while(n>=v){s+=r;n-=v;parts.push(r+' ('+v+')');}}return {s:s,parts:parts};}
+function fromRoman(s){if(!s||!/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/.test(s))return null;let n=0;const v={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};for(let i=0;i<s.length;i++){const a=v[s[i]],b=v[s[i+1]]||0;n+=a<b?-a:a;}return n;}
+
+// Telegrafencodes
+function mkIta2(){
+  const L={A:'00011',B:'11001',C:'01110',D:'01001',E:'00001',F:'01101',G:'11010',H:'10100',I:'00110',J:'01011',K:'01111',L:'10010',M:'11100',N:'01100',O:'11000',P:'10110',Q:'10111',R:'01010',S:'00101',T:'10000',U:'00111',V:'11110',W:'10011',X:'11101',Y:'10101',Z:'10001',' ':'00100','\r':'01000','\n':'00010'};
+  const figs={Q:'1',W:'2',E:'3',R:'4',T:'5',Y:'6',U:'7',I:'8',O:'9',P:'0',A:'-',B:'?',C:':',K:'(',L:')',M:'.',N:',',X:'/'};
+  const F={' ':'00100','\r':'01000','\n':'00010'};for(const k in figs)F[figs[k]]=L[k];
+  return {L:L,F:F,LT:'11111',FG:'11011',name:'Murray/ITA2'};
+}
+function mkIta1(){
+  const L={A:'00100',B:'10010',C:'10110',D:'11110',E:'01000',F:'11010',G:'01010',H:'01110',I:'11000',J:'00110',K:'00111',L:'01111',M:'01011',N:'11011',O:'11100',P:'11111',Q:'10111',R:'10011',S:'10001',T:'10101',U:'10100',V:'11101',W:'11001',X:'01001',Y:'10000',Z:'01101','-':'00101','/':'01100',' ':'01100'};
+  const F={'1':'00100','8':'10010','9':'10110','0':'11110','2':'01000','7':'01010','6':'00110','(':'00111','=':'01111',')':'01011','5':'11100','+':'11111','/':'10111','-':'10011','4':'10100',"'":'11101','?':'11001','3':'10000',':':'01101','.':'00101'};
+  return {L:L,F:F,LT:'00001',FG:'00010',name:'Baudot/ITA1'};
+}
+function telegraphEnc(t,p,T){
+  const rev=p.bits==='rev';const fx=c=>rev?c.split('').reverse().join(''):c;
+  let state='L';const out=[];const st=[];
+  for(const ch0 of t){
+    const ch=ch0.toUpperCase();let code=null;
+    if(T.L[ch]!==undefined&&(state==='L'||T.F[ch]===undefined)){
+      if(state!=='L'){out.push(fx(T.LT));st.push({a:'⇧',b:fx(T.LT),n:'Umschalten auf Buchstaben (LTRS)'});state='L';}
+      code=T.L[ch];
+    }else if(T.F[ch]!==undefined){
+      if(state!=='F'){out.push(fx(T.FG));st.push({a:'⇧',b:fx(T.FG),n:'Umschalten auf Ziffern/Zeichen (FIGS)'});state='F';}
+      code=T.F[ch];
+    }
+    if(code===null)continue;
+    out.push(fx(code));st.push({a:sp(ch),b:fx(code),n:'„'+sp(ch)+'“ ist im '+(state==='L'?'Buchstaben':'Ziffern')+'-Modus das 5-Bit-Muster '+fx(code)});
+  }
+  return R(out.join(' '),st);
+}
+function telegraphDec(t,p,T){
+  const rev=p.bits==='rev';const bits=t.replace(/[^01]/g,'');const inv={L:{},F:{}};
+  for(const k in T.L)if(!(k==='/'&&T.name==='Baudot/ITA1')&&!(k===' '&&T.name==='Baudot/ITA1'&&false))inv.L[T.L[k]]=k;
+  if(T.name==='Baudot/ITA1')inv.L['01100']=' ';
+  for(const k in T.F)inv.F[T.F[k]]=k;
+  let state='L',out='';const st=[];
+  for(let i=0;i+5<=bits.length;i+=5){
+    let c=bits.slice(i,i+5);if(rev)c=c.split('').reverse().join('');
+    if(c===T.LT){state='L';st.push({a:c,b:'⇧',n:'Umschaltcode: ab jetzt Buchstaben'});continue;}
+    if(c===T.FG){state='F';st.push({a:c,b:'⇧',n:'Umschaltcode: ab jetzt Ziffern und Zeichen'});continue;}
+    const ch=inv[state][c];const o=ch===undefined?'?':(ch==='\r'?'↵':ch==='\n'?'↵':ch);out+=o;st.push({a:c,b:sp(o),n:c+' bedeutet im '+(state==='L'?'Buchstaben':'Ziffern')+'-Modus „'+sp(o)+'“'});
+  }
+  return R(out,st);
+}
+
+// Plausibilität (deutsche Buchstabenhäufigkeit)
+const FRQ={E:17.4,N:9.8,I:7.6,S:7.3,R:7.0,A:6.5,T:6.2,D:5.1,H:4.8,U:4.4,L:3.4,C:3.1,G:3.0,M:2.5,O:2.5,B:1.9,W:1.9,F:1.7,K:1.2,Z:1.1,P:0.8,V:0.7,J:0.3,Y:0.04,X:0.03,Q:0.02};
+function scoreDE(s){let sc=0,n=0;for(const c of s.toUpperCase()){if(FRQ[c]!==undefined){sc+=FRQ[c];n++;}}return n>=3?sc/n:0;}
+function caesarShift(t,k){return t.replace(/[A-Za-z]/g,ch=>{const b=ch<='Z'?65:97;return String.fromCharCode(mod(ch.charCodeAt(0)-b+k,26)+b);});}
+function rot47(t){return t.replace(/[!-~]/g,c=>String.fromCharCode(33+mod(c.charCodeAt(0)-33+47,94)));}
+function rot5(t){return t.replace(/[0-9]/g,c=>String((+c+5)%10));}
+
+// Decabit-Tabelle (0..126), Quelle: dCode
+const DECABIT=('--+-+++-+- +--+++--+- +--++-+-+- +--+-++-+- ----+++-++ ++--+++--- ++--++--+- ++--+-+-+- ++---++-+- ---++++-+- '+
+'+-+-+++--- +-+-+-+-+- +-+--++-+- +---++-++- +---++--++ --+++-++-- ---++-+++- +---+-++-+ +--++--+-+ +--++-+--+ '+
+'+-+++--+-- +--+++-+-- ++--+-++-- -+-++-++-- +--++--++- +-+++-+--- ++-+--++-- +-+-+-++-- +--+-+++-- +--+--++-+ '+
+'+-++-++--- +-++-+-+-- +-+-++-+-- +---++++-- +-+--+-++- +++--++--- +++--+-+-- +++---++-- ++---+++-- --+-++++-- '+
+'++--++-+-- -+-+-+-++- ++----+++- +----+-+++ ++---+-+-+ ++-+-+-+-- ++-+-+--+- +++----++- ++--+--++- +--+-+-++- '+
+'++++----+- ++-++---+- +-+++---+- -++++---+- +-+-+---++ +++-++---- +++-+-+--- +-+-+--++- -++-+--++- +++-+----+ '+
+'++++-+---- -+++-++--- -+-+-++-+- ++---++--+ ++-+--+--+ ++-+++---- ++++--+--- +--++++--- -+-++++--- ++-+--+-+- '+
+'-++---+++- +---+-+++- --+-+-+++- +----++++- --+--++++- +++---+-+- +-++---++- +--+--+++- --++--+++- +-+---+-++ '+
+'-+++--+-+- -+-++-+-+- -+++---++- -+-++--++- -+---++++- -++++--+-- -++-++-+-- --++++-+-- --++-+++-- --++-+-++- '+
+'+-++++---- --++++--+- --++-++-+- +--+-+--++ +-++----++ -+-+++--+- -++-+-+-+- -+--++-++- ---+++-++- -+--+-+++- '+
+'+---+++-+- -+--+++-+- +-+-++--+- +--++-++-- ++-++--+-- +-++--++-- +-+--+++-- -++--+++-- ++---+-++- ++-+---++- '+
+'+++-+---+- +++-+--+-- ++-+-++--- ++-++-+--- +-+---+++- +-++--+-+- -+-+--+++- -+++-+-+-- +-++-+--+- -++-+++--- '+
+'+++--+--+- +++++----- -+++++---- --+++++--- ---+++++-- ----+++++- ++++++++++').split(' ');
+
+// TAPIR (Straddling-Checkerboard-Prinzip, siehe Hinweis)
+function tapirTable(order){
+  order=norm(order||'').replace(/[^A-Z]/g,'');let s='';for(const c of order+'ENISRATDHULCGMOBWFKZPVJYXQ'){if(!s.includes(c))s+=c;}
+  const enc={},dec={};const codes=[];for(let i=0;i<8;i++)codes.push(String(i));codes.push('80');for(let i=3;i<=9;i++)codes.push('8'+i);for(let i=0;i<10;i++)codes.push('9'+i);
+  for(let i=0;i<26;i++){enc[s[i]]=codes[i];dec[codes[i]]=s[i];}
+  return {enc:enc,dec:dec,order:s};
+}
+
+// =====================================================================
+//  Verfahren
+// =====================================================================
+const M=[];
+const add=o=>M.push(o);
+
+add({id:'ascii',name:'ASCII Code',teaser:'Jedes Zeichen bekommt eine feste Nummer.',example:'Hallo Welt',
+ ...X('Computer kennen keine Buchstaben, nur Zahlen. Im ASCII-Code (und seinem großen Bruder Unicode) hat jedes Zeichen eine feste Nummer: „A“ ist 65, „a“ ist 97, das Leerzeichen ist 32. Schreibt man diese Nummern auf, hat man einen einfachen Zahlencode.',
+ ['Nimm jedes Zeichen des Textes einzeln.','Schlage seine Nummer in der ASCII-/Unicode-Tabelle nach.','Schreibe die Nummer auf – dezimal, hexadezimal oder oktal.','Zum Entschlüsseln: jede Zahl zurück in das Zeichen mit dieser Nummer verwandeln.'],
+ '„Hi“ → H = 72, i = 105 → <code>72 105</code>. Hexadezimal: <code>48 69</code>.',
+ 'ASCII (American Standard Code for Information Interchange) wurde in den 1960er-Jahren genormt und umfasst 128 Zeichen. Heute nutzt man meist Unicode, dessen erste 128 Zeichen identisch mit ASCII sind.',
+ 'Das ist keine Verschlüsselung, sondern eine Kodierung – jeder kann sie sofort zurückrechnen. Auffällig sind Zahlen zwischen 32 und 126; Buchstaben liegen bei 65–90 (groß) und 97–122 (klein).'),
+ params:[{id:'base',label:'Zahlensystem',type:'select',def:'10',opts:[['10','Dezimal'],['16','Hexadezimal'],['8','Oktal']]}],
+ enc(t,p){const b=+p.base;const st=[];const out=[...t].map(ch=>{const c=ch.codePointAt(0);const s=c.toString(b).toUpperCase();st.push({a:sp(ch),b:s,n:'„'+sp(ch)+'“ hat in der Tabelle die Nummer '+c+(b!==10?' – geschrieben im '+(b===16?'Hexadezimal':'Oktal')+'system: '+s:'')});return s;}).join(' ');return R(out,st);},
+ dec(t,p){const b=+p.base;const st=[];const out=t.split(/[\s,;]+/).filter(Boolean).map(tok=>{const n=parseInt(tok,b);if(isNaN(n)||n>0x10ffff)return '?';const ch=String.fromCodePoint(n);st.push({a:tok,b:sp(ch),n:'Nummer '+n+' ist das Zeichen „'+sp(ch)+'“'});return ch;}).join('');return R(out,st);}
+});
+
+add({id:'atomtom',name:'A-tom-tom',teaser:'Buchstaben als Folgen von Schrägstrichen / und \\.',example:'SLASH',
+ ...X('Beim A-tom-tom wird jeder Buchstabe durch eine kurze Folge von Schrägstrichen („/“) und Rückwärts-Schrägstrichen („\\“) ersetzt – ähnlich wie Morse nur mit zwei Zeichen. Der Name erinnert an Trommelschläge (Tom-Tom).',
+ ['Schlage den Buchstaben in der A-tom-tom-Tabelle nach (A = <code>/</code>, B = <code>//</code>, C = <code>///</code> …).','Schreibe das Strichmuster auf.','Trenne die Buchstaben durch Leerzeichen, Wörter durch einen senkrechten Strich.','Zum Entschlüsseln: Strichgruppen abschneiden und in der Tabelle rückwärts nachschlagen.'],
+ 'SLASH → <code>\\/\\ \\\\\\/ / \\/\\ /\\\\</code>.',
+ 'Der Code wird einem gewissen Hayden zugeschrieben und ist vor allem in der Rätselwelt bekannt (Omniglot). Eine anerkannte historische Primärquelle gibt es nicht.',
+ 'Nur Buchstaben A–Z sind abgedeckt; Umlaute werden in AE/OE/UE umgeschrieben. Ohne Trennzeichen zwischen den Buchstaben wäre die Zerlegung mehrdeutig.'),
+ params:[],
+ enc(t){const TT=String.raw`/ // /// //// /\ //\ ///\ /\\ /\\\ \/ \\/ \\\/ \// \/// /\/ //\/ /\\/ /\// \/\ \\/\ \//\ \/\\ //\\ \\// \/\/ /\/\`.split(' ');
+  const st=[];const out=norm(t).split(/\s+/).map(w=>[...w].filter(c=>/[A-Z]/.test(c)).map(c=>{const o=TT[c.charCodeAt(0)-65];st.push({a:c,b:o,n:c+' ist in der Tabelle '+o});return o;}).join(' ')).filter(Boolean).join(' | ');return R(out,st);},
+ dec(t){const TT=String.raw`/ // /// //// /\ //\ ///\ /\\ /\\\ \/ \\/ \\\/ \// \/// /\/ //\/ /\\/ /\// \/\ \\/\ \//\ \/\\ //\\ \\// \/\/ /\/\`.split(' ');
+  const st=[];const out=t.trim().split(/\s*\|\s*|\n/).map(w=>w.trim().split(/\s+/).map(tok=>{const i=TT.indexOf(tok);const c=i>=0?A[i]:'?';st.push({a:tok,b:c,n:tok+' steht für '+c});return c;}).join('')).join(' ');return R(out,st);}
+});
+
+add({id:'base64',name:'Base64',teaser:'Beliebige Daten als 64 druckbare Zeichen.',example:'Hallo Welt',
+ ...X('Base64 verpackt Bytes in einen Text aus nur 64 „sicheren“ Zeichen (A–Z, a–z, 0–9, + und /). So lassen sich Binärdaten in E-Mails oder Webseiten transportieren.',
+ ['Wandle den Text in Bytes (je 8 Bit) um.','Fasse immer 3 Bytes = 24 Bit zusammen.','Teile die 24 Bit in 4 Blöcke zu je 6 Bit.','Jeder 6-Bit-Wert (0–63) wird durch ein Zeichen der Base64-Tabelle ersetzt.','Fehlen am Ende Bytes, wird mit <code>=</code> aufgefüllt.'],
+ '„Man“ → 01001101 01100001 01101110 → 010011 010110 000101 101110 → <code>TWFu</code>.',
+ 'Base64 stammt aus der E-Mail-Technik (MIME). Das Gleichheitszeichen am Ende ist ein typisches Erkennungsmerkmal.',
+ 'Keine Verschlüsselung, nur Umformatierung. Der Text wird etwa 33 % länger. Erkennbar an Länge als Vielfaches von 4 und am „=“ am Ende.'),
+ params:[],
+ enc(t){const B='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';const bytes=toBytes(t);let out='';const st=[];
+  for(let i=0;i<bytes.length;i+=3){const b=bytes.slice(i,i+3);const n=(b[0]<<16)|((b[1]||0)<<8)|(b[2]||0);const o=B[(n>>18)&63]+B[(n>>12)&63]+(b.length>1?B[(n>>6)&63]:'=')+(b.length>2?B[n&63]:'=');out+=o;
+   const bits=b.map(x=>x.toString(2).padStart(8,'0')).join('');const lab=b.map(x=>x>32&&x<127?String.fromCharCode(x):'·').join('');
+   st.push({a:lab,b:o,n:'Bytes '+b.join(', ')+' → Bits '+bits+' → in 6er-Gruppen '+(bits.match(/.{1,6}/g)||[]).join(' ')+' → Zeichen '+o});}
+  return R(out,st);},
+ dec(t){try{const clean=t.replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');const bin=atob(clean);const bytes=Array.from(bin,c=>c.charCodeAt(0));const st=[];for(let i=0;i<clean.length;i+=4){const g=clean.slice(i,i+4);st.push({a:g,b:'Bytes',n:'Vier Zeichen '+g+' liefern bis zu drei Bytes'});}return R(fromBytes(bytes),st);}catch(e){return R('⚠ Das ist kein gültiges Base64.');}}
+});
+
+const ITA1=mkIta1(),ITA2=mkIta2();
+add({id:'baudot',name:'Baudot-Code (CCITT-1)',teaser:'Der historische 5-Bit-Telegrafencode von Émile Baudot (ITA1).',example:'Hallo 123',
+ warn:'ITA1 kennt kein eigenes Leerzeichen. Ich nutze hier den Code 01100 („/“) als Wortzwischenraum; Wikipedia und andere Quellen unterscheiden sich in Details. Die Tabelle stammt von rabbit.eng.miami.edu (Original-Baudot, „Common Order“).',
+ ...X('Der Baudot-Code überträgt jedes Zeichen mit fünf Impulsen (Bits). Fünf Bits ergeben nur 32 Muster – zu wenig für Buchstaben und Ziffern. Deshalb gibt es zwei Zeichensätze (Buchstaben und Ziffern/Zeichen) und zwei Umschaltcodes.',
+ ['Beginne im Buchstaben-Modus (LTRS).','Schlage das Zeichen in der Tabelle nach und schreibe sein 5-Bit-Muster auf.','Für Ziffern wird zuerst der Umschaltcode FIGS gesendet, danach gelten die Zifferncodes – bei Buchstaben wieder LTRS.','Entschlüsseln: Bits in 5er-Gruppen schneiden, Umschaltcodes beachten, Zeichen nachschlagen.'],
+ 'A = <code>00100</code>, B = <code>10010</code>, die Ziffer 1 steht im FIGS-Modus auf dem gleichen Muster wie A.',
+ 'Émile Baudot erfand das System in den 1870er-Jahren für den Mehrfach-Telegrafen; die Einheit „Baud“ ist nach ihm benannt. 1901 ordnete Donald Murray die Codes neu (daraus wurde ITA2 / CCITT-2). ITA1 ist heute nicht mehr in Gebrauch.',
+ 'Nur Kodierung, keine Geheimhaltung. Wegen der Bit-Reihenfolge gibt es zwei Lesarten – schalte sie unten um, falls das Ergebnis nicht passt.'),
+ params:[{id:'bits',label:'Bit-Reihenfolge',type:'select',def:'norm',opts:[['norm','normal (Bit 1 links)'],['rev','umgekehrt']]}],
+ enc(t,p){return telegraphEnc(t,p,ITA1);},dec(t,p){return telegraphDec(t,p,ITA1);}
+});
+
+add({id:'bcd',name:'BCD-Code',teaser:'Jede Dezimalziffer als eigener 4-Bit-Block.',example:'2026',
+ ...X('BCD (Binary Coded Decimal) schreibt jede Ziffer einer Dezimalzahl getrennt als 4 Bit auf – im Gegensatz zur normalen Binärzahl, die die ganze Zahl umwandelt. Digitaluhren und Taschenrechner nutzen das.',
+ ['Zerlege die Zahl in einzelne Ziffern.','Schreibe jede Ziffer als 4-Bit-Binärzahl (0 = 0000 … 9 = 1001).','Reihe die Vierergruppen aneinander.','Im Modus „Text“ wird jeder Buchstabe zuerst durch seine Position im Alphabet (A = 01 … Z = 26) ersetzt.'],
+ '2026 → 2 = 0010, 0 = 0000, 2 = 0010, 6 = 0110 → <code>0010 0000 0010 0110</code>.',
+ 'BCD war in frühen Rechenmaschinen und Großrechnern verbreitet, weil sich Dezimalzahlen damit ohne Umrechnung anzeigen lassen. Die Bitmuster 1010–1111 kommen in BCD nie vor.',
+ 'Reine Kodierung. Erkennbar daran, dass nur Gruppen von 0000 bis 1001 auftauchen.'),
+ params:[{id:'mode',label:'Modus',type:'select',def:'num',opts:[['num','Zahlen (Ziffern)'],['txt','Text (Buchstabe = Position A=01 … Z=26)']]}],
+ enc(t,p){const st=[];let out;
+  if(p.mode==='num'){out=[...t].filter(c=>/[0-9]/.test(c)).map(c=>{const o=(+c).toString(2).padStart(4,'0');st.push({a:c,b:o,n:'Ziffer '+c+' = '+o});return o;}).join(' ');}
+  else{out=norm(t).split(/\s+/).map(w=>[...w].filter(c=>/[A-Z]/.test(c)).map(c=>{const n=String(c.charCodeAt(0)-64).padStart(2,'0');const o=[...n].map(d=>(+d).toString(2).padStart(4,'0')).join(' ');st.push({a:c,b:o,n:c+' ist der '+(c.charCodeAt(0)-64)+'. Buchstabe → '+n+' → '+o});return o;}).join(' ')).filter(Boolean).join(' | ');}
+  return R(out,st);},
+ dec(t,p){const st=[];const groups=t.replace(/[^01\s|]/g,'').split('|');
+  if(p.mode==='num'){const g=t.replace(/[^01]/g,'').match(/.{4}/g)||[];return R(g.map(x=>{const v=parseInt(x,2);st.push({a:x,b:v>9?'?':v,n:x+' = '+v});return v>9?'?':v;}).join(''),st);}
+  const out=groups.map(w=>{const g=w.replace(/[^01]/g,'').match(/.{8}/g)||[];return g.map(x=>{const a=parseInt(x.slice(0,4),2),b=parseInt(x.slice(4),2);const n=a*10+b;const c=n>=1&&n<=26?A[n-1]:'?';st.push({a:x,b:c,n:x.slice(0,4)+' '+x.slice(4)+' = '+n+' → Buchstabe '+c});return c;}).join('');}).join(' ');
+  return R(out,st);}
+});
+
+add({id:'beatnik',name:'Beatnik',teaser:'Programmiersprache, in der der Scrabble-Wert der Wörter den Befehl bestimmt.',example:'Hallo',
+ warn:'Ich habe die Sprünge (Wertigkeit 13–16) nach bestem Wissen umgesetzt; für das Verschlüsseln werden nur „push“ (5) und „ausgeben“ (9) benötigt.',
+ ...X('Beatnik ist eine esoterische Programmiersprache. Ein Programm ist ein ganz normaler englischer Text. Jedes Wort bekommt seinen Scrabble-Wert (Summe der Buchstabenwerte) – und dieser Wert ist der Befehl.',
+ ['Berechne für jedes Wort den englischen Scrabble-Wert (A=1, B=3, C=3, D=2, … Q=10, Z=10).','Wert 5 bedeutet: lege den Wert des nächsten Wortes auf den Stapel.','Wert 9 bedeutet: nimm die oberste Zahl vom Stapel und gib sie als Zeichen aus.','Zum Verschlüsseln erzeugt das Programm für jedes Zeichen drei Wörter: „push“ (5), ein Wort mit dem Wert des Zeichencodes und „ausgeben“ (9).','Zum Entschlüsseln wird das Programm ausgeführt.'],
+ 'Für „A“ (Code 65): ein Wort mit Wert 5, ein Wort mit Wert 65, ein Wort mit Wert 9.',
+ 'Beatnik wurde 2001 von Cliff Biffle erfunden. Der Witz: Gedichte im Beat-Stil können echte Programme sein.',
+ 'Die erzeugten Wörter sind Fantasiewörter – ein Rätsel-Kenner erkennt sie als Beatnik-Muster. Gib bei Programmen mit Eingabe (Befehl 8) die Eingabe unten an.'),
+ params:[{id:'inp',label:'Programm-Eingabe (nur Entschlüsseln)',type:'text',def:''}],
+ enc(t){const bytes=toBytes(t);const words=[];const st=[];let k=0;
+  for(const b of bytes){const w1=bword(5,k++),w2=bword(b,k++),w3=bword(9,k++);words.push(w1,w2,w3);
+   const ch=b>32&&b<127?String.fromCharCode(b):'#'+b;st.push({a:ch,b:w1+' '+w2+' '+w3,n:'Wert '+wscore(w1)+' (push), Wert '+wscore(w2)+' = Zeichencode '+b+', Wert '+wscore(w3)+' (ausgeben)'});}
+  let out='';for(let i=0;i<words.length;i+=6)out+=words.slice(i,i+6).join(' ')+'\n';return R(out.trim(),st);},
+ dec(t,p){const r=beatnikRun(t,p.inp||'');const st=[];const ws=t.split(/[^A-Za-z]+/).filter(Boolean);ws.slice(0,40).forEach(w=>st.push({a:w,b:String(wscore(w)),n:'„'+w+'“ hat den Scrabble-Wert '+wscore(w)}));return R(r.out+(r.err?'\n⚠ '+r.err:''),st);}
+});
+
+add({id:'bifid',name:'Bifid',teaser:'Polybius-Quadrat + Zeilen/Spalten vermischen (Delastelle).',example:'Treffpunkt am Brunnen',
+ ...X('Bifid kombiniert ein 5×5-Buchstabenquadrat mit einer „Vermischung“: Die Koordinaten aller Buchstaben werden getrennt aufgeschrieben und dann neu zu Buchstaben zusammengesetzt. Dadurch beeinflusst jeder Buchstabe mehrere Chiffrebuchstaben.',
+ ['Baue aus einem Schlüsselwort ein 5×5-Quadrat (J wird zu I).','Schreibe für jeden Klartextbuchstaben Zeile und Spalte auf.','Reihe zuerst alle Zeilennummern, dann alle Spaltennummern aneinander (pro Block).','Lies die Ziffernreihe paarweise als neue Koordinaten und übersetze sie zurück in Buchstaben.','Entschlüsseln: Das Verfahren wird rückwärts durchlaufen.'],
+ 'Mit leerem Schlüssel (Alphabet-Quadrat): „AB“ hat die Zeilen 0 0 und Spalten 0 1 → Folge 0 0 0 1 → Paare (0,0) (0,1) → „AB“.',
+ 'Erfunden 1901 vom französischen Kryptologen Félix Delastelle. „Bifid“ bedeutet „zweigeteilt“. Mit der Periode (Blocklänge) lässt sich die Streuung steuern.',
+ 'Deutlich stärker als einfache Substitution, aber mit moderner Rechenleistung leicht zu knacken. Bei Block (Periode) 0 wird der ganze Text als ein Block behandelt.'),
+ params:[{id:'key',label:'Schlüsselwort',type:'text',def:'GEHEIM'},{id:'period',label:'Periode (0 = ganzer Text)',type:'number',def:'5',min:0}],
+ enc(t,p){return bifid(t,p,false);},dec(t,p){return bifid(t,p,true);}
+});
+function bifid(t,p,dec){
+  const sq=keySquare(p.key);const L=norm(t).replace(/J/g,'I').replace(/[^A-Z]/g,'');const per=+p.period||0;const size=per>0?per:(L.length||1);let out='';const st=[];
+  for(let i=0;i<L.length;i+=size){const b=L.slice(i,i+size);
+    if(!dec){const rows=[],cols=[];for(const ch of b){const k=sq.indexOf(ch);rows.push(Math.floor(k/5));cols.push(k%5);}const seq=rows.concat(cols);let o='';for(let j=0;j<seq.length;j+=2)o+=sq[seq[j]*5+seq[j+1]];out+=o;
+      st.push({a:b,b:o,n:'Block „'+b+'“: Zeilen '+rows.join('')+' + Spalten '+cols.join('')+' → '+seq.join('')+' → paarweise gelesen: '+o});}
+    else{const seq=[];for(const ch of b){const k=sq.indexOf(ch);seq.push(Math.floor(k/5),k%5);}const n=b.length;const rows=seq.slice(0,n),cols=seq.slice(n);let o='';for(let j=0;j<n;j++)o+=sq[rows[j]*5+cols[j]];out+=o;
+      st.push({a:b,b:o,n:'Block „'+b+'“ → Ziffernfolge '+seq.join('')+' → erste Hälfte = Zeilen, zweite = Spalten → '+o});}
+  }
+  return R(out,st,{html:'<details><summary>Schlüsselquadrat anzeigen</summary>'+sqHtml(sq)+'</details>'});
+}
+function sqHtml(sq){let h='<table class="g">';for(let r=0;r<5;r++){h+='<tr>';for(let c=0;c<5;c++)h+='<td>'+sq[r*5+c]+'</td>';h+='</tr>';}return h+'</table>';}
+
+add({id:'binaer',name:'Binär-Code',teaser:'Text als Nullen und Einsen.',example:'Hallo',
+ ...X('Im Binärcode wird jedes Zeichen als Folge von 0 und 1 geschrieben. Dazu verwendet man die ASCII-/UTF-8-Nummer des Zeichens und schreibt sie im Zweiersystem – meist mit 8 Stellen.',
+ ['Bestimme die Nummer des Zeichens (z. B. „H“ = 72).','Rechne sie ins Zweiersystem um: 72 = 64 + 8 → 1001000.','Fülle links mit Nullen auf 8 Stellen auf: 01001000.','Entschlüsseln: in 8er-Gruppen teilen, jede Gruppe zurück in eine Zahl und dann in ein Zeichen wandeln.'],
+ '„Hi“ → <code>01001000 01101001</code>.',
+ 'Das Zweiersystem ist die Grundlage aller Digitaltechnik. Gottfried Wilhelm Leibniz beschrieb es 1703.',
+ 'Keine Verschlüsselung. Wenn die Gruppen mit 0 beginnen und genau 8 Stellen haben, ist es meist ASCII-Text.'),
+ params:[{id:'bits',label:'Bits pro Zeichen',type:'select',def:'8',opts:[['8','8'],['7','7 (nur ASCII)']]}],
+ enc(t,p){const n=+p.bits;const st=[];const out=[...t].map(ch=>{const o=toBytes(ch).map(b=>b.toString(2).padStart(n,'0')).join(' ');st.push({a:sp(ch),b:o,n:'„'+sp(ch)+'“ = Nummer '+ch.codePointAt(0)+' = '+o});return o;}).join(' ');return R(out,st);},
+ dec(t,p){const n=+p.bits;const bits=t.replace(/[^01]/g,'');const g=bits.match(new RegExp('.{1,'+n+'}','g'))||[];const st=[];const bytes=g.filter(x=>x.length===n).map(x=>parseInt(x,2));g.forEach(x=>{const v=parseInt(x,2);st.push({a:x,b:String.fromCharCode(v),n:x+' = '+v+' → '+sp(String.fromCharCode(v))});});return R(fromBytes(bytes),st);}
+});
+
+add({id:'brainfuck',name:'Brainfuck Interpreter',teaser:'Programmiersprache mit nur 8 Befehlen – hier als Text-Verschlüsselung.',example:'Hallo',
+ ...X('Brainfuck besteht aus nur acht Zeichen: <code>+ - &gt; &lt; [ ] . ,</code>. Ein Band aus Speicherzellen und ein Zeiger genügen, um jedes Programm zu schreiben. „Verschlüsseln“ heißt hier: Aus dem Text wird ein Programm, das den Text ausgibt.',
+ ['Das Band besteht aus Zellen, alle am Anfang 0; ein Zeiger zeigt auf eine Zelle.','<code>+</code> / <code>-</code> erhöhen / verringern die aktuelle Zelle, <code>&gt;</code> / <code>&lt;</code> verschieben den Zeiger.','<code>.</code> gibt den Zeichencode der Zelle als Buchstabe aus.','<code>[ … ]</code> wiederholt, solange die Zelle nicht 0 ist (Schleife).','Der Generator zählt mit Schleifen zum Zielwert und gibt dann das Zeichen aus. Beim Entschlüsseln wird das Programm ausgeführt.'],
+ '<code>++++++++[&gt;++++++++&lt;-]&gt;+.</code> setzt die Zelle auf 8×8+1 = 65 und gibt „A“ aus.',
+ 'Urban Müller erfand Brainfuck 1993 mit dem Ziel, einen möglichst kleinen Compiler zu bauen (er war nur 240 Byte groß).',
+ 'Der Code ist unlesbar, aber nicht geheim: Jeder Interpreter führt ihn aus. Endlosschleifen werden nach 3 Mio. Schritten abgebrochen.'),
+ params:[{id:'inp',label:'Programm-Eingabe für „,“ (nur Entschlüsseln)',type:'text',def:''}],
+ enc(t){const prog=bfGenerate(t);const st=[];[...t].slice(0,40).forEach(ch=>st.push({a:sp(ch),b:bfGenerate(ch).slice(1),n:'Für „'+sp(ch)+'“ (Code '+ch.codePointAt(0)+') zählt das Programm bis zum Zielwert und gibt es mit „.“ aus'}));return R(prog,st);},
+ dec(t,p){const code=t.replace(/[^+\-<>\[\].,]/g,'');const r=bfRun(code,p.inp||'');const st=[];const names={'+':'Zelle +1','-':'Zelle −1','>':'Zeiger nach rechts','<':'Zeiger nach links','[':'Schleife beginnt','] ':'','.':'Zeichen ausgeben',',':'Zeichen einlesen'};[...code].slice(0,40).forEach(c=>st.push({a:c,b:'',n:c===']'?'Schleifenende: zurück zum [, falls Zelle ≠ 0':(names[c]||c)}));return R(r.out+(r.err?'\n⚠ '+r.err:''),st);}
+});
+
+add({id:'haeufigkeit',name:'Buchstabenhäufigkeit',teaser:'Analyse: Welche Buchstaben kommen wie oft vor?',example:'Dies ist ein kleiner Beispieltext, an dem man die Häufigkeit der Buchstaben sehr gut sehen kann.',
+ ...X('Das ist kein Verschlüsselungsverfahren, sondern das wichtigste Werkzeug zum Knacken einfacher Chiffren. In jeder Sprache kommen bestimmte Buchstaben viel häufiger vor als andere – im Deutschen ist das E mit rund 17 % Spitzenreiter, gefolgt von N, I, S, R, A, T.',
+ ['Zähle, wie oft jeder Buchstabe A–Z im Text vorkommt (Umlaute werden zu AE, OE, UE).','Teile jede Zahl durch die Gesamtzahl der Buchstaben → Prozentwerte.','Sortiere nach Häufigkeit.','Vergleiche das Ergebnis mit der Sprache: Bei einer einfachen Substitution entspricht der häufigste Chiffrebuchstabe vermutlich dem „E“.'],
+ 'Im Text „Hallo Welt“: L kommt 3-mal vor, O 1-mal … L ist hier der häufigste Buchstabe.',
+ 'Der arabische Gelehrte Al-Kindi beschrieb die Häufigkeitsanalyse schon im 9. Jahrhundert. Sie machte monoalphabetische Chiffren wie Cäsar unsicher und führte zur Entwicklung polyalphabetischer Verfahren wie Vigenère.',
+ 'Kurze Texte (< 100 Buchstaben) folgen der Statistik nur grob. Polyalphabetische Chiffren glätten die Verteilung – der Koinzidenzindex (unten) hilft: Deutsch ≈ 0,076, Zufall ≈ 0,038.'),
+ params:[{id:'sort',label:'Sortierung',type:'select',def:'cnt',opts:[['cnt','nach Häufigkeit'],['abc','alphabetisch']]}],
+ enc(t,p){const L=norm(t).replace(/[^A-Z]/g,'');const cnt={};for(const c of A)cnt[c]=0;for(const c of L)cnt[c]++;const n=L.length;let ks=[...A];if(p.sort==='cnt')ks.sort((a,b)=>cnt[b]-cnt[a]||a.localeCompare(b));
+  const max=Math.max(1,...Object.values(cnt));const st=[];let out='Buchstaben gesamt: '+n+'\n';let html='<div style="margin-top:10px">';
+  ks.forEach(c=>{const pc=n?(cnt[c]*100/n):0;out+=c+'  '+String(cnt[c]).padStart(4)+'  '+pc.toFixed(1).padStart(5)+' %\n';if(cnt[c]>0){st.push({a:c,b:String(cnt[c]),n:c+' kommt '+cnt[c]+'-mal vor ('+pc.toFixed(1)+' % aller Buchstaben)'});}html+='<div class="fr"><b>'+c+'</b><span style="width:'+(cnt[c]/max*260)+'px"></span>'+cnt[c]+'</div>';});
+  let ic=0;if(n>1){for(const c of A)ic+=cnt[c]*(cnt[c]-1);ic/=n*(n-1);}out+='\nKoinzidenzindex: '+ic.toFixed(4);return R(out,st,{html:html+'</div>'});}
+});
+
+add({id:'buchstabenwert',name:'Buchstabenwert',teaser:'A=1, B=2 … Z=26 – Buchstaben als Zahlen.',example:'Geocaching macht Spaß',
+ ...X('Der Buchstabenwert ordnet jedem Buchstaben seine Position im Alphabet zu: A = 1, B = 2 … Z = 26. Beliebt bei Rätselcaches, um aus Wörtern Zahlen oder Koordinaten zu berechnen.',
+ ['Zähle im Alphabet: A ist 1, B ist 2 …','Ersetze jeden Buchstaben durch seine Zahl.','Optional addiert man die Zahlen zu einem „Wortwert“ und bildet die Quersumme.','Entschlüsseln: Zahlen 1–26 zurück in Buchstaben.'],
+ '„GEO“ → 7 5 15, Wortwert 27, Quersumme 9.',
+ 'Das A1Z26-Prinzip ist uralt – schon in der Gematrie (hebräische Zahlenmystik) und in der Kabbala wurden Buchstaben als Zahlen gelesen.',
+ 'Keine echte Verschlüsselung. Umlaute werden hier als AE, OE, UE gezählt (Konventionen unterscheiden sich).'),
+ params:[{id:'sep',label:'Trennzeichen',type:'text',def:' '}],
+ enc(t,p){const sep=p.sep===undefined?' ':p.sep;const st=[];const lines=[];const words=norm(t).split(/\s+/).filter(Boolean);
+  const out=words.map(w=>{const ls=[...w].filter(c=>/[A-Z]/.test(c));if(!ls.length)return '';const nums=ls.map(c=>{const n=c.charCodeAt(0)-64;st.push({a:c,b:String(n),n:c+' ist der '+n+'. Buchstabe des Alphabets'});return n;});const sum=nums.reduce((a,b)=>a+b,0);const qs=String(sum).split('').reduce((a,b)=>a+ +b,0);lines.push(w+': Wortwert '+sum+', Quersumme '+qs);return nums.join(sep);}).filter(Boolean).join(sep+'|'+sep);
+  return R(out+(lines.length?'\n\n'+lines.join('\n'):''),st);},
+ dec(t){const st=[];const out=t.split(/\s*\|\s*|\n/).map(w=>(w.match(/\d+/g)||[]).map(n=>{const v=+n;const c=v>=1&&v<=26?A[v-1]:'?';st.push({a:n,b:c,n:'Die '+v+' ist der '+v+'. Buchstabe: '+c});return c;}).join('')).join(' ');return R(out,st);}
+});
+
+add({id:'caesar',name:'Cäsar Verschiebechiffre',teaser:'Jeder Buchstabe wandert um n Stellen im Alphabet.',example:'Veni, vidi, vici',
+ ...X('Die Cäsar-Chiffre ist die berühmteste Verschlüsselung der Antike: Man schreibt das Alphabet zweimal untereinander, verschiebt die untere Zeile um einen festen Betrag und ersetzt jeden Buchstaben durch den darunterstehenden.',
+ ['Lege die Verschiebung fest, z. B. 3.','A wird zu D, B zu E, … X wird zu A (am Ende springt das Alphabet wieder an den Anfang).','Nur Buchstaben werden verändert; Leerzeichen, Zahlen und Umlaute bleiben stehen.','Entschlüsseln: um dieselbe Zahl zurückschieben.'],
+ 'Verschiebung 3: „HALLO“ → <code>KDOOR</code>.',
+ 'Gaius Julius Caesar soll mit Verschiebung 3 seine Militärbriefe gesichert haben (Sueton). Augustus nutzte eine Verschiebung um 1.',
+ 'Es gibt nur 25 sinnvolle Schlüssel – man kann alle durchprobieren (Brute Force). Aktiviere beim Entschlüsseln „alle 25 Möglichkeiten“, wenn der Schlüssel unbekannt ist.'),
+ params:[{id:'shift',label:'Verschiebung (1–25)',type:'number',def:'3',min:1,max:25},{id:'all',label:'Beim Entschlüsseln alle 25 Möglichkeiten zeigen',type:'check',def:false}],
+ enc(t,p){const k=+p.shift;const st=[];for(const ch of t){if(/[A-Za-z]/.test(ch)&&st.length<60){const o=caesarShift(ch,k);st.push({a:ch,b:o,n:ch+' + '+k+' Stellen = '+o});}}return R(caesarShift(t,k),st);},
+ dec(t,p){if(p.all){let o='';for(let k=1;k<=25;k++)o+=String(k).padStart(2,'0')+': '+caesarShift(t,-k)+'\n';return R(o.trim(),[]);}const k=+p.shift;const st=[];for(const ch of t){if(/[A-Za-z]/.test(ch)&&st.length<60){const o=caesarShift(ch,-k);st.push({a:ch,b:o,n:ch+' − '+k+' Stellen = '+o});}}return R(caesarShift(t,-k),st);}
+});
+
+add({id:'cow',name:'COW Interpreter',teaser:'Brainfuck-Variante, die nur aus „moo“-Wörtern besteht.',example:'Hallo',
+ warn:'Unterstützt werden die acht Grundbefehle sowie OOO, OOM und oom. Die Befehle mOO (Befehl ausführen) und MMM (Register) sind nicht umgesetzt.',
+ ...X('COW ist eine Brainfuck-Variante, bei der jeder Befehl ein „Muh“ in einer anderen Groß-/Kleinschreibung ist: <code>moo</code>, <code>mOo</code>, <code>moO</code>, <code>MOo</code>, <code>MoO</code> … Die Logik ist dieselbe wie bei Brainfuck – ein Band aus Zellen mit einem Zeiger.',
+ ['Brainfuck-Programm erzeugen (+ − &gt; &lt; [ ] .).','Jeden Befehl durch das passende COW-Wort ersetzen: <code>MoO</code> = +, <code>MOo</code> = −, <code>moO</code> = &gt;, <code>mOo</code> = &lt;, <code>MOO</code> = [, <code>moo</code> = ], <code>Moo</code> = Ausgabe.','Beim Entschlüsseln liest der Interpreter die Wörter und führt sie aus.'],
+ '<code>MoO MoO Moo</code> erhöht die Zelle zweimal und gibt das Zeichen mit Code 2 aus.',
+ 'COW stammt von Sean Heber (2003). Die Schreibweise der Kuh-Laute ist reine Spielerei, aber auch in Geocaching-Rätseln beliebt.',
+ 'Wie Brainfuck: unlesbar, aber nicht geheim. Hinweis: „Moo“ gibt nur aus, wenn die Zelle ≠ 0 ist – das Zeichen mit Code 0 lässt sich daher nicht ausgeben.'),
+ params:[{id:'inp',label:'Programm-Eingabe (nur Entschlüsseln)',type:'text',def:''}],
+ enc(t){const bf=bfGenerate(t).replace(/[^+\-<>\[\].]/g,'');const out=[...bf].map(c=>BF2COW[c]).join(' ');const st=[];[...bf].slice(0,40).forEach(c=>st.push({a:c,b:BF2COW[c],n:'Brainfuck-Befehl „'+c+'“ heißt in COW „'+BF2COW[c]+'“'}));return R(out,st);},
+ dec(t,p){const toks=t.match(/moo|mOo|moO|mOO|Moo|MOo|MoO|MOO|OOO|MMM|OOM|oom/g)||[];const code=toks.map(x=>COW2BF[x]).join('');const r=bfRun(code,p.inp||'');const st=[];toks.slice(0,40).forEach(x=>st.push({a:x,b:COW2BF[x]||'',n:x+' entspricht dem Brainfuck-Befehl „'+(COW2BF[x]||'(nicht unterstützt)')+'“'}));return R(r.out+(r.err?'\n⚠ '+r.err:''),st);}
+});
+
+add({id:'decabit',name:'Decabit Impulsraster',teaser:'10 Impulse (+ / −) pro Zeichen, ursprünglich für Stromnetz-Signale.',example:'DECA',
+ ...X('Decabit übertragte Zahlen von 0 bis 126 über das Stromnetz: Jede Zahl wird durch ein Muster aus 10 positiven (+) und negativen (−) Impulsen dargestellt. In fast allen Mustern sind genau 5 Plus- und 5 Minus-Impulse – so lassen sich Übertragungsfehler erkennen. Für Texte verwendet man die ASCII-Nummer der Zeichen.',
+ ['Bestimme die ASCII-Nummer des Zeichens (D = 68).','Schlage die Nummer in der Decabit-Tabelle nach: 68 = <code>-+-++++---</code>.','Schreibe die 10 Impulse auf, Zeichen durch Leerzeichen getrennt.','Entschlüsseln: Gruppen zu 10 Impulsen suchen und in der Tabelle die Nummer nachschlagen.'],
+ '„DECA“ → <code>-+-++++--- ++-+--+-+- +--++++--- ++-+++----</code>.',
+ 'Decabit wurde Ende der 1960er-Jahre von der Firma Zellweger (Deutschland) entwickelt, u. a. für die Fernablesung von Zählern über das Stromnetz („Rundsteuertechnik“). Jeder Impuls dauerte 600 ms, eine Übertragung also 6,6 s.',
+ 'Die Tabelle ist reine Zuordnung, ohne Geheimnis. Es gibt nur die Zeichen 0–126; andere werden als „?“ ausgegeben. Tabelle unten aufklappbar. Quelle der Tabelle: dCode.'),
+ params:[{id:'fmt',label:'Darstellung',type:'select',def:'pm',opts:[['pm','+ und −'],['bin','1 und 0']]}],
+ enc(t,p){const st=[];const out=[...t].map(ch=>{const c=ch.codePointAt(0);if(c>126)return '?';let o=DECABIT[c];if(p.fmt==='bin')o=o.replace(/\+/g,'1').replace(/-/g,'0');st.push({a:sp(ch),b:o,n:'„'+sp(ch)+'“ hat die ASCII-Nummer '+c+' → Decabit-Muster '+o});return o;}).join(' ');
+  return R(out,st,{html:'<details><summary>Decabit-Tabelle (0–126)</summary><pre style="font-size:12px;columns:3;margin:6px 0">'+DECABIT.map((x,i)=>String(i).padStart(3)+'  '+x).join('\n')+'</pre></details>'});},
+ dec(t){const s=t.replace(/1/g,'+').replace(/0/g,'-').replace(/[^+\-]/g,'');const st=[];let out='';for(let i=0;i+10<=s.length;i+=10){const g=s.slice(i,i+10);const n=DECABIT.indexOf(g);const ch=n>=0?String.fromCharCode(n):'?';out+=ch;st.push({a:g,b:sp(ch),n:'Muster '+g+' steht für die Nummer '+n+' = „'+sp(ch)+'“'});}return R(out,st);}
+});
+
+add({id:'foursquare',name:'Four-Square',teaser:'Vier 5×5-Quadrate, Buchstabenpaare werden gemeinsam verschlüsselt.',example:'HELP ME',
+ ...X('Four-Square (Vier-Quadrate-Chiffre) arbeitet mit vier 5×5-Buchstabenquadraten. Oben links und unten rechts steht das normale Alphabet (J = I), oben rechts und unten links stehen zwei Quadrate mit je einem Schlüsselwort. Der Text wird in Buchstabenpaare zerlegt.',
+ ['Zerlege den Text in Paare („HE LP ME“); bei ungerader Länge wird ein X angehängt.','Suche den ersten Buchstaben im Quadrat oben links, den zweiten im Quadrat unten rechts.','Die beiden Buchstaben spannen ein Rechteck auf.','Die anderen beiden Ecken – oben rechts und unten links – sind das verschlüsselte Paar.','Entschlüsseln: Das Rechteck wird von den Schlüsselquadraten zurück zu den Alphabetquadraten gespannt.'],
+ 'Schlüssel EXAMPLE und KEYWORD: „HELPME“ → <code>FYGMKY</code>.',
+ 'Erfunden von Félix Delastelle (um 1902) als Verbesserung der Playfair-Chiffre. Sie zerstört die Buchstabenhäufigkeit besser als einfache Substitutionen.',
+ 'Besser als Cäsar, aber mit Rechner und genügend Text knackbar. Merke dir beide Schlüsselwörter – ohne sie ist die Rückrechnung schwierig.'),
+ params:[{id:'key1',label:'Schlüsselwort 1 (oben rechts)',type:'text',def:'EXAMPLE'},{id:'key2',label:'Schlüsselwort 2 (unten links)',type:'text',def:'KEYWORD'}],
+ enc(t,p){return foursquare(t,p,false);},dec(t,p){return foursquare(t,p,true);}
+});
+function foursquare(t,p,dec){
+  const pl=keySquare(''),k1=keySquare(p.key1),k2=keySquare(p.key2);const L=norm(t).replace(/J/g,'I').replace(/[^A-Z]/g,'');let pairs=[];
+  for(let i=0;i<L.length;i+=2)pairs.push([L[i],L[i+1]||'X']);let out='';const st=[];
+  for(const [a,b] of pairs){let o;
+    if(!dec){const ia=pl.indexOf(a),ib=pl.indexOf(b);const r1=Math.floor(ia/5),c1=ia%5,r2=Math.floor(ib/5),c2=ib%5;o=k1[r1*5+c2]+k2[r2*5+c1];st.push({a:a+b,b:o,n:a+' liegt oben links (Zeile '+(r1+1)+', Spalte '+(c1+1)+'), '+b+' unten rechts (Zeile '+(r2+1)+', Spalte '+(c2+1)+') → Rechteck-Ecken oben rechts / unten links: '+o});}
+    else{const ia=k1.indexOf(a),ib=k2.indexOf(b);const r1=Math.floor(ia/5),c2=ia%5,r2=Math.floor(ib/5),c1=ib%5;o=pl[r1*5+c1]+pl[r2*5+c2];st.push({a:a+b,b:o,n:a+' im Schlüsselquadrat oben rechts, '+b+' unten links → Rechteck zurück zu den Alphabetquadraten: '+o});}
+    out+=o;}
+  return R(out.match(/.{1,2}/g)?out.match(/.{1,2}/g).join(' '):out,st,{html:'<details><summary>Die vier Quadrate anzeigen</summary><p>Oben rechts (Schlüssel 1):</p>'+sqHtml(k1)+'<p>Unten links (Schlüssel 2):</p>'+sqHtml(k2)+'</details>'});
+}
+
+add({id:'handy',name:'Handy',teaser:'Buchstaben per Handy-Tastatur (Multi-Tap).',example:'Hallo Welt',
+ ...X('Auf alten Handys liegen mehrere Buchstaben auf einer Zifferntaste: 2 = ABC, 3 = DEF … 9 = WXYZ. Um einen Buchstaben zu schreiben, drückte man die Taste so oft, wie der Buchstabe auf ihr steht. „C“ ist also dreimal die 2: <code>222</code>.',
+ ['Finde die Taste, auf der der Buchstabe liegt (2 = ABC, 3 = DEF, 4 = GHI, 5 = JKL, 6 = MNO, 7 = PQRS, 8 = TUV, 9 = WXYZ).','Zähle seine Position auf der Taste (A = 1, B = 2, C = 3).','Schreibe die Ziffer so oft hin, wie die Position angibt.','Trenne die Buchstaben durch Leerzeichen; die 0 steht für ein Leerzeichen zwischen Wörtern.'],
+ '„HALLO“ → H = 44, A = 2, L = 555, L = 555, O = 666 → <code>44 2 555 555 666</code>.',
+ 'Multi-Tap (auch „Mehrfachdruck“) war vor Touchscreens und T9 die Standardmethode für SMS. T9 rät dagegen aus der Tastenfolge das Wort.',
+ 'Nur Kodierung. Ohne Leerzeichen zwischen den Buchstaben wäre der Text mehrdeutig (222 = C oder AAA oder BA …).'),
+ params:[],
+ enc(t){const K={2:'ABC',3:'DEF',4:'GHI',5:'JKL',6:'MNO',7:'PQRS',8:'TUV',9:'WXYZ'};const st=[];const out=norm(t).split(/\s+/).filter(Boolean).map(w=>[...w].filter(c=>/[A-Z]/.test(c)).map(c=>{for(const k in K){const i=K[k].indexOf(c);if(i>=0){const o=k.repeat(i+1);st.push({a:c,b:o,n:c+' liegt auf Taste '+k+' an Position '+(i+1)+' → Taste '+(i+1)+'× drücken: '+o});return o;}}}).join(' ')).filter(Boolean).join(' 0 ');return R(out,st);},
+ dec(t){const K={2:'ABC',3:'DEF',4:'GHI',5:'JKL',6:'MNO',7:'PQRS',8:'TUV',9:'WXYZ'};const st=[];const out=t.trim().split(/\s+/).map(tok=>{if(/^0+$/.test(tok))return ' ';const m=/^([2-9])\1*$/.exec(tok);if(!m)return '?';const c=(K[tok[0]]||'')[tok.length-1]||'?';st.push({a:tok,b:c,n:'Taste '+tok[0]+' '+tok.length+'× gedrückt = '+c});return c;}).join('');return R(out,st);}
+});
+
+add({id:'klopf',name:'Klopfcode',teaser:'Gefängniscode: Zeile und Spalte eines 5×5-Quadrats als Klopfzeichen.',example:'Hilfe',
+ ...X('Der Klopfcode (Tap Code) wurde in Gefängnissen benutzt, um durch Wände zu klopfen. Die Buchstaben stehen in einem 5×5-Quadrat (das K fehlt und wird durch C ersetzt). Zuerst klopft man die Zeile, nach einer kurzen Pause die Spalte.',
+ ['Das Quadrat: <code>A B C D E / F G H I J / L M N O P / Q R S T U / V W X Y Z</code>.','Finde die Zeile (1–5) und die Spalte (1–5) des Buchstabens.','Klopfe oder schreibe erst so viele Punkte wie die Zeilennummer, dann so viele wie die Spaltennummer.','Entschlüsseln: Punktpaare zählen und im Quadrat nachsehen.'],
+ 'H = Zeile 2, Spalte 3 → <code>••|•••</code>.',
+ 'Im Vietnamkrieg nutzten amerikanische Kriegsgefangene (u. a. im „Hanoi Hilton“) den Klopfcode zur Verständigung; ähnliche Verfahren gab es schon im 19. Jahrhundert in russischen Gefängnissen.',
+ 'Das Quadrat ist öffentlich bekannt, also keine echte Verschlüsselung. Der Vorteil: Es braucht keine Hilfsmittel.'),
+ params:[{id:'fmt',label:'Darstellung',type:'select',def:'dots',opts:[['dots','Punkte ••|•••'],['num','Zahlen 23']]}],
+ enc(t,p){const G='ABCDEFGHIJLMNOPQRSTUVWXYZ';const st=[];const out=norm(t).replace(/J/g,'J').split(/\s+/).filter(Boolean).map(w=>[...w].map(c=>c==='K'?'C':c).filter(c=>G.includes(c)).map(c=>{const i=G.indexOf(c);const r=Math.floor(i/5)+1,k=i%5+1;const o=p.fmt==='num'?''+r+k:'•'.repeat(r)+'|'+'•'.repeat(k);st.push({a:c,b:o,n:c+' steht in Zeile '+r+', Spalte '+k+' → '+r+' mal, Pause, '+k+' mal klopfen'});return o;}).join(' ')).filter(Boolean).join(' / ');return R(out,st);},
+ dec(t){const G='ABCDEFGHIJLMNOPQRSTUVWXYZ';const st=[];const out=t.trim().split(/\s*\/\s*|\n/).map(w=>w.trim().split(/\s+/).map(tok=>{let r,k;if(/^[1-5][1-5]$/.test(tok)){r=+tok[0];k=+tok[1];}else{const m=tok.split(/[|·.,:;-]/);r=(m[0]||'').length;k=(m[1]||'').length;}const c=r>=1&&r<=5&&k>=1&&k<=5?G[(r-1)*5+k-1]:'?';st.push({a:tok,b:c,n:'Zeile '+r+', Spalte '+k+' = '+c});return c;}).join('')).join(' ');return R(out,st);}
+});
+
+add({id:'koordschnitt',name:'Koordinatenschnitt',teaser:'Buchstaben als Schnittpunkt von Spalte und Zeile (z. B. B3).',example:'Treffpunkt',
+ warn:'Die genaue Definition des „Koordinatenschnitts“ auf gc.de konnte ich nicht nachprüfen. Hier ist es als Schnittpunkt-Koordinate in einem 5×5-Gitter umgesetzt (Spalte A–E, Zeile 1–5, J = I) – wie bei einer Schiffe-versenken-Angabe.',
+ ...X('Die Buchstaben stehen in einem 5×5-Gitter. Statt Zeile und Spalte als Zahlenpaar zu nennen, gibt man den „Schnittpunkt“ an: die Spalte als Buchstabe (A–E) und die Zeile als Zahl (1–5).',
+ ['Zeichne ein 5×5-Gitter und trage die Buchstaben der Reihe nach ein (J = I).','Beschrifte die Spalten mit A–E und die Zeilen mit 1–5.','Lies für jeden Buchstaben den Schnittpunkt aus, z. B. „H“ → Spalte C, Zeile 2 → <code>C2</code>.','Entschlüsseln: im Gitter an der Stelle nachsehen.'],
+ 'T = Zeile 4, Spalte 4 → <code>D4</code>.',
+ 'Das Prinzip stammt vom Polybios-Quadrat (Antike); die Koordinatenschreibweise kennt man vom Schach und von Landkarten.',
+ 'Reine Substitution – die Statistik des Textes bleibt erhalten und lässt sich mit der Häufigkeitsanalyse knacken.'),
+ params:[],
+ enc(t){const G='ABCDEFGHIKLMNOPQRSTUVWXYZ';const st=[];const out=norm(t).replace(/J/g,'I').split(/\s+/).filter(Boolean).map(w=>[...w].filter(c=>G.includes(c)).map(c=>{const i=G.indexOf(c);const o='ABCDE'[i%5]+(Math.floor(i/5)+1);st.push({a:c,b:o,n:c+' liegt in Spalte '+'ABCDE'[i%5]+' und Zeile '+(Math.floor(i/5)+1)});return o;}).join(' ')).filter(Boolean).join(' / ');return R(out,st);},
+ dec(t){const G='ABCDEFGHIKLMNOPQRSTUVWXYZ';const st=[];const out=t.trim().split(/\s*\/\s*|\n/).map(w=>w.trim().split(/\s+/).map(tok=>{const m=/^([A-Ea-e])([1-5])$/.exec(tok);const c=m?G[(+m[2]-1)*5+'ABCDE'.indexOf(m[1].toUpperCase())]:'?';st.push({a:tok,b:c,n:'Schnittpunkt '+tok+' = '+c});return c;}).join('')).join(' ');return R(out,st);}
+});
+
+add({id:'morse',name:'Morse-Code',teaser:'Kurze und lange Signale für jeden Buchstaben.',example:'SOS Hilfe',
+ ...X('Beim Morse-Code wird jeder Buchstabe aus kurzen („Punkt“) und langen („Strich“) Signalen zusammengesetzt. Häufige Buchstaben bekommen kurze Zeichen: E = <code>.</code>, T = <code>-</code>.',
+ ['Schlage den Buchstaben in der Morse-Tabelle nach (A = <code>.-</code>, B = <code>-...</code> …).','Schreibe die Punkte und Striche auf; zwischen Buchstaben kommt ein Leerzeichen, zwischen Wörtern ein „/“.','Als Ton: Punkt = kurzer Ton, Strich = dreimal so lang; Pause zwischen Buchstaben = 3 Punktlängen, zwischen Wörtern = 7.','Entschlüsseln: die Zeichengruppen in der Tabelle rückwärts nachschlagen. Der Knopf „Morse abspielen“ gibt es als Ton aus.'],
+ 'SOS → <code>... --- ...</code>.',
+ 'Samuel Morse und Alfred Vail entwickelten den Code um 1837 für den elektrischen Telegrafen. Das internationale Notsignal SOS (<code>... --- ...</code>) gilt seit 1906.',
+ 'Morse ist eine Kodierung – jeder, der sie kennt, kann mitlesen. Umlaute gibt es: Ä = <code>.-.-</code>, Ö = <code>---.</code>, Ü = <code>..--</code>.'),
+ params:[{id:'sym',label:'Zeichen',type:'select',def:'ascii',opts:[['ascii','. und -'],['fancy','• und −']]}],
+ enc(t,p){const st=[];const f=s=>p.sym==='fancy'?s.replace(/\./g,'•').replace(/-/g,'−'):s;const out=t.toUpperCase().split(/\s+/).filter(Boolean).map(w=>[...w].filter(c=>MORSE[c]).map(c=>{const o=f(MORSE[c]);st.push({a:c,b:o,n:c+' = '+o+'  (Punkt = kurz, Strich = lang)'});return o;}).join(' ')).filter(Boolean).join(' / ');return R(out,st);},
+ dec(t){const out=morseDecode(t);const st=[];t.replace(/[•·]/g,'.').replace(/[−–—_]/g,'-').split(/\s+/).filter(x=>x&&x!=='/'&&x!=='|').forEach(tok=>{const c=MORSE_INV[tok]||'?';st.push({a:tok,b:c,n:tok+' = '+c});});return R(out,st);},
+ actions:[{label:'🔊 Morse abspielen',fn:(res,ui)=>ui.playMorse(res.out)}]
+});
+
+add({id:'murray',name:'Murray-Code (CCITT-2)',teaser:'Der 5-Bit-Fernschreibercode (ITA2), der bis in die 1960er genutzt wurde.',example:'MAY 24TH',
+ ...X('Der Murray-Code (offiziell ITA2 oder CCITT-2) ist die überarbeitete Fassung des Baudot-Codes. Er wurde so angeordnet, dass häufige Zeichen wenig Löcher im Lochstreifen brauchen. Wie bei Baudot gibt es zwei Ebenen (Buchstaben und Ziffern) mit den Umschaltcodes LTRS (<code>11111</code>) und FIGS (<code>11011</code>).',
+ ['Beginne im Buchstaben-Modus.','Schlage das Zeichen nach und schreibe das 5-Bit-Muster auf (A = <code>00011</code>, E = <code>00001</code>, Leerzeichen = <code>00100</code>).','Für Ziffern erst FIGS senden; dann steht E für 3, T für 5, usw. Zurück mit LTRS.','Entschlüsseln: Bits in 5er-Gruppen lesen und je nach Modus nachschlagen.'],
+ '„May 24th“ → M A Y ␠ [FIGS] 2 4 [LTRS] T H → <code>11100 00011 10101 00100 11011 10011 01010 11111 10000 10100</code>.',
+ 'Donald Murray baute um 1901 einen Fernschreiber mit Tastatur und ordnete den Baudot-Code neu. 1932 wurde er von der CCITT als ITA2 genormt. Er blieb bis zur Verbreitung von ASCII Standard im Fernschreibverkehr.',
+ 'Reine Kodierung. Die Ziffernbelegung folgt der Tastaturreihe QWERTYUIOP = 1234567890. Je nach Land gibt es abweichende Sonderzeichen; hier sind nur die gemeinsamen verwendet.'),
+ params:[{id:'bits',label:'Bit-Reihenfolge',type:'select',def:'norm',opts:[['norm','normal (Bit 1 links)'],['rev','umgekehrt']]}],
+ enc(t,p){return telegraphEnc(t,p,ITA2);},dec(t,p){return telegraphDec(t,p,ITA2);}
+});
+
+add({id:'okto3',name:'Okto3',teaser:'Zeichen als dreistellige Oktalzahlen.',example:'Hallo',
+ warn:'Die genaue Definition von „Okto3“ auf gc.de konnte ich nicht nachprüfen. Umgesetzt ist die naheliegende Deutung: jedes Zeichen als 3-stellige Zahl im Oktalsystem (Basis 8, nur Ziffern 0–7).',
+ ...X('Das Oktalsystem zählt zur Basis 8 und kennt nur die Ziffern 0–7. Eine dreistellige Oktalzahl reicht für Werte von 0 bis 511 und damit für jedes Byte. Okto3 schreibt jedes Zeichen als drei Oktalziffern.',
+ ['Bestimme die Nummer des Zeichens (H = 72).','Rechne sie ins Achtersystem: 72 = 1·64 + 1·8 + 0 → <code>110</code>.','Fülle auf drei Stellen auf.','Entschlüsseln: jede Dreiergruppe zurück in eine Zahl und ein Zeichen verwandeln.'],
+ '„Hi“ → H = 72 = <code>110</code>, i = 105 = <code>151</code>.',
+ 'Das Oktalsystem war in frühen Computern mit 12-, 24- oder 36-Bit-Wörtern gebräuchlich (z. B. PDP-8) und hat sich in den Unix-Dateirechten (chmod 755) gehalten.',
+ 'Kodierung ohne Geheimnis. Erkennbar an Zahlenreihen, in denen die Ziffern 8 und 9 niemals vorkommen.'),
+ params:[],
+ enc(t){const st=[];const out=toBytes(t).map(b=>{const o=b.toString(8).padStart(3,'0');st.push({a:sp(String.fromCharCode(b)),b:o,n:'Nummer '+b+' im Achtersystem = '+o});return o;}).join(' ');return R(out,st);},
+ dec(t){const d=t.replace(/[^0-7]/g,'');const g=d.match(/.{1,3}/g)||[];const st=[];const bytes=g.map(x=>parseInt(x,8)&255);g.forEach((x,i)=>st.push({a:x,b:sp(String.fromCharCode(bytes[i])),n:x+' (Oktal) = '+parseInt(x,8)+' → '+sp(String.fromCharCode(bytes[i]))}));return R(fromBytes(bytes),st);}
+});
+
+add({id:'ook',name:'Ook! Interpreter',teaser:'Brainfuck für Orang-Utans: nur „Ook.“, „Ook!“ und „Ook?“.',example:'Hallo',
+ ...X('Ook! ist eine Brainfuck-Variante, die für den Bibliothekar-Orang-Utan der Scheibenwelt-Romane erdacht wurde. Jeder Brainfuck-Befehl ist ein Paar aus zwei Ook-Wörtern.',
+ ['Brainfuck-Programm erzeugen.','Jeden Befehl durch sein Ook-Paar ersetzen: + = <code>Ook. Ook.</code>, − = <code>Ook! Ook!</code>, &gt; = <code>Ook. Ook?</code>, &lt; = <code>Ook? Ook.</code>, [ = <code>Ook! Ook?</code>, ] = <code>Ook? Ook!</code>, . = <code>Ook! Ook.</code>, , = <code>Ook. Ook!</code>.','Entschlüsseln: Das Programm wird paarweise gelesen und ausgeführt.'],
+ '<code>Ook. Ook. Ook! Ook.</code> = „+ .“ – Zelle erhöhen und ausgeben.',
+ 'Ook! wurde 2001 von David Morgan-Mar erfunden – er nennt es eine Sprache, die „von Orang-Utans geschrieben und gelesen werden kann“.',
+ 'Wie Brainfuck: nur Tarnung, keine Geheimhaltung. Ein langer Text aus „Ook“ ist als Rätselcode leicht erkennbar.'),
+ params:[{id:'inp',label:'Programm-Eingabe (nur Entschlüsseln)',type:'text',def:''}],
+ enc(t){const bf=bfGenerate(t);const out=[...bf].map(c=>BF2OOK[c]).join(' ');const st=[];[...bf].slice(0,40).forEach(c=>st.push({a:c,b:BF2OOK[c],n:'Brainfuck-Befehl „'+c+'“ = '+BF2OOK[c]}));return R(out,st);},
+ dec(t,p){const toks=t.match(/Ook[.!?]/g)||[];let code='';const st=[];for(let i=0;i+1<toks.length;i+=2){const k=toks[i]+' '+toks[i+1];const c=OOK2BF[k]||'';code+=c;if(st.length<40)st.push({a:k,b:c,n:k+' entspricht dem Brainfuck-Befehl „'+(c||'?')+'“'});}const r=bfRun(code,p.inp||'');return R(r.out+(r.err?'\n⚠ '+r.err:''),st);}
+});
+
+add({id:'otp',name:'One-Time-Pad',teaser:'Perfekte Verschlüsselung mit einem zufälligen, einmaligen Schlüssel.',example:'Treffpunkt Morgen',
+ ...X('Beim One-Time-Pad (Einmalschlüssel) wird jeder Buchstabe mit einem eigenen, zufälligen Schlüsselbuchstaben „addiert“ (A = 0 … Z = 25, modulo 26). Der Schlüssel ist so lang wie die Nachricht und wird nur ein einziges Mal benutzt.',
+ ['Wandle Text und Schlüssel in Zahlen um (A = 0 … Z = 25).','Addiere Buchstabe für Buchstabe (Text + Schlüssel) und nimm den Rest nach Division durch 26.','Wandle die Ergebnisse zurück in Buchstaben (aus Lesbarkeitsgründen in Fünfergruppen).','Entschlüsseln: den Schlüssel wieder abziehen.'],
+ 'H (7) + Schlüssel X (23) = 30 → Rest 4 → E.',
+ 'Das Verfahren wurde 1917 von Gilbert Vernam und Joseph Mauborgne entwickelt. Claude Shannon bewies 1949, dass es bei wirklich zufälligem, geheimem und nur einmal genutztem Schlüssel absolut sicher ist. Der „Heiße Draht“ zwischen Washington und Moskau nutzte es.',
+ 'Absolut sicher nur, wenn der Schlüssel (1) echt zufällig, (2) mindestens so lang wie der Text und (3) streng einmalig ist. Wird er wiederholt, entspricht das Verfahren Vigenère und ist knackbar. Der Zufallsknopf unten erzeugt einen Schlüssel – bewahre ihn getrennt auf.'),
+ params:[{id:'key',label:'Schlüssel (Buchstaben)',type:'text',def:'XMCKLQWPOZ'}],
+ actions:[{label:'🎲 Zufallsschlüssel passender Länge',fn:(res,ui)=>{const n=Math.max(1,norm(ui.input()).replace(/[^A-Z]/g,'').length);const a=new Uint8Array(n);crypto.getRandomValues(a);ui.setParam('key',Array.from(a,x=>A[x%26]).join(''));}}],
+ enc(t,p){return otp(t,p,1);},dec(t,p){return otp(t,p,-1);}
+});
+function otp(t,p,sg){
+  const key=norm(p.key||'').replace(/[^A-Z]/g,'');const L=norm(t).replace(/[^A-Z]/g,'');if(!key)return R('⚠ Bitte einen Schlüssel eingeben (nur Buchstaben).');
+  let out='';const st=[];for(let i=0;i<L.length;i++){const a=L.charCodeAt(i)-65,k=key.charCodeAt(i%key.length)-65;const o=A[mod(a+sg*k,26)];out+=o;if(st.length<60)st.push({a:L[i],b:o,n:L[i]+' ('+a+') '+(sg>0?'+':'−')+' Schlüssel '+key[i%key.length]+' ('+k+') = '+mod(a+sg*k,26)+' → '+o});}
+  const note=key.length<L.length?'\n\n⚠ Der Schlüssel ist kürzer als der Text und wird wiederholt – das ist dann kein echtes One-Time-Pad mehr (eher Vigenère).':'';
+  return R(out.match(/.{1,5}/g)?out.match(/.{1,5}/g).join(' ')+note:'',st);
+}
+
+add({id:'pixelbild',name:'Pixelbild',teaser:'Text als Muster aus schwarzen und weißen Pixeln.',example:'Hi',
+ warn:'Die genaue gc.de-Variante konnte ich nicht nachprüfen. Hier wird jedes Bit zu einem Pixel (1 = ■ schwarz, 0 = □ weiß); eine Zeile entspricht normalerweise einem Zeichen.',
+ ...X('Ein Pixelbild ist die grafische Darstellung eines Binärcodes: Jede 1 wird ein ausgefülltes, jede 0 ein leeres Kästchen. Liest man die Zeilen von links nach rechts, erhält man wieder die Bits.',
+ ['Wandle jedes Zeichen in 8 Bit (Binärcode) um.','Zeichne eine Zeile mit 8 Kästchen pro Zeichen; 1 = schwarz, 0 = weiß.','Stapele die Zeilen untereinander – fertig ist das Bild.','Entschlüsseln: Zeile für Zeile Bits ablesen, in 8er-Gruppen in Zahlen und Zeichen verwandeln.'],
+ '„H“ = 01001000 → □■□□■□□□.',
+ 'Das Prinzip steckt in jedem Barcode, QR-Code und in Lochkarten. Rätselmacher verstecken so Texte in Bildern oder Ausdrucken.',
+ 'Reine Kodierung. Die Zeilenbreite (unten einstellbar) sollte dem Bitmuster entsprechen – bei 8 Pixeln pro Zeile ergibt sich ein Zeichen je Zeile.'),
+ params:[{id:'w',label:'Pixel pro Zeile',type:'number',def:'8',min:1,max:64}],
+ enc(t,p){const w=Math.max(1,+p.w||8);const bits=toBytes(t).map(b=>b.toString(2).padStart(8,'0')).join('');const rows=bits.match(new RegExp('.{1,'+w+'}','g'))||[];const out=rows.map(r=>r.replace(/1/g,'■').replace(/0/g,'□')).join('\n');
+  let html='<div class="pix" style="grid-template-columns:repeat('+w+',14px)">';rows.forEach(r=>{for(let i=0;i<w;i++)html+='<i'+(r[i]==='1'?' class="on"':'')+'></i>';});html+='</div>';
+  const st=[];[...t].slice(0,40).forEach(ch=>{const b=toBytes(ch).map(x=>x.toString(2).padStart(8,'0')).join('');st.push({a:sp(ch),b:b.replace(/1/g,'■').replace(/0/g,'□'),n:'„'+sp(ch)+'“ = '+b+' → 1 wird ein schwarzes, 0 ein weißes Kästchen'});});return R(out,st,{html:html});},
+ dec(t){const bits=[...t].filter(c=>'■█#1□░.0'.includes(c)).map(c=>'■█#1'.includes(c)?'1':'0').join('');const g=bits.match(/.{8}/g)||[];const st=[];const bytes=g.map(x=>parseInt(x,2));g.slice(0,40).forEach((x,i)=>st.push({a:x.replace(/1/g,'■').replace(/0/g,'□'),b:sp(String.fromCharCode(bytes[i])),n:x+' = '+bytes[i]+' → '+sp(String.fromCharCode(bytes[i]))}));return R(fromBytes(bytes),st);}
+});
+
+add({id:'playfair',name:'Playfair',teaser:'Buchstabenpaare im 5×5-Quadrat – die Chiffre des britischen Militärs.',example:'Hide the gold in the tree stump',
+ ...X('Playfair verschlüsselt immer zwei Buchstaben gleichzeitig. Dazu baut man aus einem Schlüsselwort ein 5×5-Quadrat (J = I).',
+ ['Baue das Quadrat: zuerst die Buchstaben des Schlüsselworts (ohne Wiederholungen), danach der Rest des Alphabets.','Teile den Text in Paare. Doppelbuchstaben in einem Paar werden durch ein X getrennt; bei ungerader Länge hängt man ein X an.','Beide Buchstaben in derselben Zeile → je der Buchstabe rechts daneben (am Rand zurück an den Anfang).','Beide in derselben Spalte → je der Buchstabe darunter.','Sonst bilden sie ein Rechteck → jeder Buchstabe wird durch den in seiner Zeile gegenüberliegenden Eckbuchstaben ersetzt.'],
+ 'Schlüssel „PLAYFAIR EXAMPLE“: „HIDETHEGOLDINTHETREXESTUMP“ → <code>BMODZBXDNABEKUDMUIXMMOUVIF</code>.',
+ 'Erfunden 1854 von Charles Wheatstone, benannt nach Lord Playfair, der sie förderte. Britische Truppen nutzten sie im Burenkrieg und im Ersten Weltkrieg.',
+ 'Deutlich sicherer als Cäsar, da es 600 Buchstabenpaare gibt. Für moderne Verfahren trotzdem zu schwach. Beim Entschlüsseln bleiben die eingefügten X im Text stehen.'),
+ params:[{id:'key',label:'Schlüsselwort',type:'text',def:'PLAYFAIR EXAMPLE'}],
+ enc(t,p){return playfair(t,p,false);},dec(t,p){return playfair(t,p,true);}
+});
+function playfair(t,p,dec){
+  const sq=keySquare(p.key);const L=norm(t).replace(/J/g,'I').replace(/[^A-Z]/g,'');const pairs=[];
+  if(!dec){let i=0;while(i<L.length){const a=L[i];let b=L[i+1];if(b===undefined||a===b){b=a==='X'?'Q':'X';i++;}else i+=2;pairs.push([a,b]);}}
+  else{for(let i=0;i<L.length;i+=2)pairs.push([L[i],L[i+1]||'X']);}
+  const d=dec?-1:1;let out='';const st=[];
+  for(const [a,b] of pairs){const ia=sq.indexOf(a),ib=sq.indexOf(b);const ra=Math.floor(ia/5),ca=ia%5,rb=Math.floor(ib/5),cb=ib%5;let x,y,why;
+    if(ra===rb){x=sq[ra*5+mod(ca+d,5)];y=sq[rb*5+mod(cb+d,5)];why='gleiche Zeile → '+(dec?'links':'rechts')+' daneben';}
+    else if(ca===cb){x=sq[mod(ra+d,5)*5+ca];y=sq[mod(rb+d,5)*5+cb];why='gleiche Spalte → '+(dec?'darüber':'darunter');}
+    else{x=sq[ra*5+cb];y=sq[rb*5+ca];why='Rechteck → Ecken tauschen';}
+    out+=x+y;st.push({a:a+b,b:x+y,n:a+b+': '+why+' → '+x+y});}
+  return R(out.match(/.{1,2}/g)?out.match(/.{1,2}/g).join(' '):out,st,{html:'<details><summary>Schlüsselquadrat anzeigen</summary>'+sqHtml(sq)+'</details>'});
+}
+
+add({id:'pocket',name:'Pocket-Decoder',teaser:'Probiert viele Entschlüsselungen auf einmal durch.',example:'Uryyb Jryg! 72 97 108 108 111',
+ warn:'Die genaue Funktion des „Pocket-Decoders“ auf gc.de konnte ich nicht nachprüfen. Ich habe ihn als Allround-Entschlüssler umgesetzt: Er wendet viele gängige Verfahren auf deinen Text an und sortiert nach Lesbarkeit.',
+ ...X('Der Pocket-Decoder ist die „Westentaschen-Lösung“ für unbekannte Codes: Statt zu raten, welches Verfahren vorliegt, probiert er viele davon automatisch aus.',
+ ['Der Text wird mit Cäsar (alle 25 Verschiebungen), ROT5/13/18/47, Atbash und Umkehrung behandelt.','Er wird außerdem als Base64, Hex, Binär, ASCII-Dezimal, Oktal, Morse und A1Z26 gelesen.','Jedes Ergebnis wird auf Lesbarkeit geprüft (deutsche Buchstabenhäufigkeit).','Die plausibelsten Ergebnisse stehen oben.'],
+ '„Uryyb Jryg“ → ROT13 → „Hallo Welt“.',
+ 'Solche Multi-Decoder gehören zum Standardwerkzeug von Geocachern und CTF-Spielern, weil viele Rätsel mit einfachen, aber unbekannten Kodierungen arbeiten.',
+ 'Er findet nur Verfahren ohne Schlüssel. Bei Verfahren mit Schlüsselwort (Vigenère, Playfair …) hilft er nicht. Die Bewertung ist eine Schätzung – lies die Ergebnisse selbst kritisch.'),
+ params:[],
+ dir:'dec',
+ dec(t){
+  const c=[];const push=(n,s)=>{if(typeof s==='string'&&s.length>0&&s!==t&&!/[\u0000-\u0008\u000e-\u001f\ufffd]/.test(s)&&!c.some(x=>x.s===s&&x.n===n))c.push({n:n,s:s});};
+  for(let k=1;k<=25;k++)push('Cäsar −'+k,caesarShift(t,-k));
+  push('ROT13',caesarShift(t,13));push('ROT5',rot5(t));push('ROT18',rot5(caesarShift(t,13)));push('ROT47',rot47(t));
+  push('Atbash',t.replace(/[A-Za-z]/g,ch=>{const b=ch<='Z'?65:97;return String.fromCharCode(b+25-(ch.charCodeAt(0)-b));}));
+  push('Umkehrung',[...t].reverse().join(''));
+  try{push('Base64',fromBytes(Array.from(atob(t.replace(/\s+/g,'')),x=>x.charCodeAt(0))));}catch(e){}
+  const hx=t.replace(/0x|\s|,/gi,'');if(/^([0-9a-f]{2})+$/i.test(hx))push('Hex',fromBytes(hx.match(/../g).map(x=>parseInt(x,16))));
+  const bn=t.replace(/\s/g,'');if(/^[01]+$/.test(bn)&&bn.length%8===0)push('Binär',fromBytes(bn.match(/.{8}/g).map(x=>parseInt(x,2))));
+  if(/^[\d\s,;]+$/.test(t)){const nums=t.split(/[\s,;]+/).filter(Boolean).map(Number);if(nums.every(n=>n>=0&&n<0x110000)){push('ASCII dezimal',nums.map(n=>String.fromCodePoint(n)).join(''));}
+   if(nums.every(n=>n>=1&&n<=26))push('A1Z26',nums.map(n=>A[n-1]).join(''));
+   if(/^([0-7]{3}\s*)+$/.test(t))push('Oktal',fromBytes(t.replace(/\s/g,'').match(/.{3}/g).map(x=>parseInt(x,8)&255)));}
+  if(/^[.\-•−\s\/|]+$/.test(t)&&/[.\-•]/.test(t))push('Morse',morseDecode(t));
+  // einzelne Wörter mit ROT-Mischung
+  const rated=c.map(x=>({n:x.n,s:x.s,sc:scoreDE(x.s)})).sort((a,b)=>b.sc-a.sc);
+  const lines=rated.slice(0,14).map(x=>x.n.padEnd(14)+(x.sc>6?'★ ':x.sc>5?'☆ ':'  ')+x.s.replace(/\n/g,' ').slice(0,200));
+  const st=rated.slice(0,10).map(x=>({a:x.n,b:x.s.slice(0,40),n:x.n+' liefert: „'+x.s.slice(0,60)+'“ – Lesbarkeit '+x.sc.toFixed(1)+' (deutscher Text liegt bei etwa 6–7, Zufall bei etwa 3,9)'}));
+  return R(lines.length?lines.join('\n'):'Keine passende Entschlüsselung gefunden.',st);}
+});
+
+add({id:'prim',name:'Primzahlen-Alphabet',teaser:'A = 2, B = 3, C = 5 … Z = 101 – Buchstaben als Primzahlen.',example:'Primzahl',
+ ...X('Beim Primzahlen-Alphabet bekommt der n-te Buchstabe die n-te Primzahl: A = 2, B = 3, C = 5, D = 7, E = 11 … Z = 101.',
+ ['Schreibe die ersten 26 Primzahlen auf: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101.','Ordne sie den Buchstaben A–Z der Reihe nach zu.','Ersetze jeden Buchstaben durch seine Primzahl.','Entschlüsseln: die Primzahl in der Liste suchen.'],
+ '„ABC“ → <code>2 3 5</code>.',
+ 'Primzahlen sind seit der Antike bekannt (Euklid bewies, dass es unendlich viele gibt). Bei Rätseln dienen sie als „zusätzliche Hürde“ gegenüber dem normalen Buchstabenwert A1Z26.',
+ 'Reine Substitution mit festem Schlüssel. Erkennbar daran, dass nur Primzahlen ≤ 101 vorkommen.'),
+ params:[],
+ enc(t){const P=[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101];const st=[];const out=norm(t).split(/\s+/).filter(Boolean).map(w=>[...w].filter(c=>/[A-Z]/.test(c)).map(c=>{const n=c.charCodeAt(0)-65;st.push({a:c,b:String(P[n]),n:c+' ist der '+(n+1)+'. Buchstabe und bekommt die '+(n+1)+'. Primzahl: '+P[n]});return P[n];}).join(' ')).filter(Boolean).join(' | ');return R(out,st);},
+ dec(t){const P=[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101];const st=[];const out=t.split(/\s*\|\s*|\n/).map(w=>(w.match(/\d+/g)||[]).map(n=>{const i=P.indexOf(+n);const c=i>=0?A[i]:'?';st.push({a:n,b:c,n:n+' ist die '+(i+1)+'. Primzahl → '+c});return c;}).join('')).join(' ');return R(out,st);}
+});
+
+add({id:'ragbaby',name:'Ragbaby',teaser:'Verschiebung, die mit jedem Buchstaben und Wort wächst.',example:'Rag baby',
+ ...X('Ragbaby ist eine Chiffre mit wachsender Verschiebung. Man benutzt ein Schlüsselwort-Alphabet mit 24 Buchstaben (J = I, X = W). Jeder Buchstabe wird um eine Zahl verschoben, die von der Wortnummer und seiner Position im Wort abhängt.',
+ ['Baue das 24-Buchstaben-Alphabet: Schlüsselwort (ohne Wiederholungen), danach die übrigen Buchstaben.','Nummeriere die Wörter ab 1. Im ersten Wort wird der erste Buchstabe um 1, der zweite um 2 usw. verschoben; im zweiten Wort beginnt die Zählung bei 2, im dritten bei 3, …','Verschiebe jeden Buchstaben im Schlüsselwort-Alphabet nach rechts um diese Zahl (am Ende wieder von vorn).','Entschlüsseln: um dieselbe Zahl nach links verschieben.'],
+ 'Alphabet „ALPHBET…“: „RAG BABY“ → <code>SPM THDH</code>.',
+ 'Ragbaby ist eine Erfindung der American Cryptogram Association (ACA) und wird in Rätselzeitschriften verwendet. Der Name stammt vom englischen Wort für den ersten Satz der Beispielnachricht.',
+ 'Bei einer einzigen Zeile schwach, aber nicht trivial zu knacken. Beim Entschlüsseln gehen die Unterschiede zwischen I/J und W/X verloren. Kleinbuchstaben bleiben klein.'),
+ params:[{id:'key',label:'Schlüsselwort',type:'text',def:'ALPHBET'}],
+ enc(t,p){return ragbaby(t,p,1);},dec(t,p){return ragbaby(t,p,-1);}
+});
+function ragbaby(t,p,sg){
+  let al='';const src=norm(p.key||'').replace(/J/g,'I').replace(/X/g,'W')+A.replace('J','').replace('X','');for(const c of src){if(/[A-Z]/.test(c)&&!al.includes(c))al+=c;}
+  let out='',w=0,j=0,inW=false;const st=[];
+  for(const ch of t){
+    if(/\s/.test(ch)){inW=false;out+=ch;continue;}
+    if(!inW){inW=true;w++;j=0;}
+    if(/[A-Za-z]/.test(ch)){const lower=ch>='a';const u=ch.toUpperCase().replace('J','I').replace('X','W');const i=al.indexOf(u);const sh=w+j;const o=al[mod(i+sg*sh,24)];out+=lower?o.toLowerCase():o;if(st.length<60)st.push({a:ch,b:o,n:'Wort '+w+', Position '+(j+1)+' → Verschiebung '+sh+': '+u+' '+(sg>0?'→':'←')+' '+o});j++;}
+    else out+=ch;
+  }
+  return R(out,st,{html:'<p style="font:14px var(--mono);margin:8px 0 0">Alphabet: '+al+'</p>'});
+}
+
+add({id:'wherigo',name:'Reverse Wherigo Solver',teaser:'Rechenhilfe für Reverse-Wherigo-Cartridges (kein Text-Verschlüsseler).',example:'',dir:'enc',
+ warn:'Diese Funktion kann ich hier nicht sinnvoll nachbauen: Die drei 6-stelligen Codes einer Reverse-Wherigo-Cartridge ergeben sich aus einer nicht öffentlich dokumentierten Rechenvorschrift des Programms von „-Waldmeister-“. Statt eine falsche Umsetzung zu liefern, erkläre ich das Prinzip und verweise auf geprüfte Werkzeuge.',
+ ...X('Ein Reverse Wherigo dreht die normale Schatzsuche um: Die Cartridge verrät nicht, wohin man gehen soll, sondern nur, wie weit man vom Ziel entfernt ist. Die Position des Ziels ist in drei sechsstelligen Zahlen versteckt, die man beim Start eingibt.',
+ ['Du lädst die „Reverse Cache“-Cartridge (von -Waldmeister-) in einen Wherigo-Player.','Du gibst die drei 6-stelligen Codes aus dem Cache-Listing ein. Daraus berechnet die Cartridge die Zielkoordinate.','Beim Spielen fragst du die „Reverse Cache Box“ nach der Entfernung zum Ziel; die Richtung bleibt verborgen.','Ein Solver rechnet die drei Codes direkt in Koordinaten um (oder umgekehrt, wenn du selbst einen Cache anlegst).'],
+ 'Codes wie <code>515192 518309 116860</code> enthalten die Koordinaten in verschleierter Form – ohne den Algorithmus lassen sie sich nicht lesen.',
+ 'Reverse Wherigos wurden um 2008 populär. Das Prinzip erinnert an alte Spiele wie „Hot and Cold“. Der Solver auf cachesleuth.com bietet Umrechnung für die gängigen Varianten (Waldmeister, day1976, ReWind).',
+ 'Nutze Solver nur als letzte Hilfe: Der Reiz eines Reverse Wherigos liegt im Suchen mit den Entfernungsangaben. Verwende dafür bitte die geprüften Werkzeuge: <a href="https://www.cachesleuth.com/tools/reversewherigo/" target="_blank" rel="noopener">cachesleuth.com › Reverse Wherigo (Waldmeister)</a>.'),
+ params:[],
+ enc(){return R('Dieses Verfahren ist kein Text-Verschlüsseler. Lies die Erklärung unten und nutze für die Umrechnung einen geprüften Solver (siehe Hinweis).',[]);}
+});
+
+add({id:'roemisch',name:'Römische Zahl',teaser:'Zahlen als I, V, X, L, C, D, M.',example:'Im Jahr 2026 feiern wir 5 Jahre',
+ ...X('Römische Zahlen schreiben Zahlen mit sieben Buchstaben: I = 1, V = 5, X = 10, L = 50, C = 100, D = 500, M = 1000. Gleiche Zeichen werden addiert; steht ein kleineres vor einem größeren, wird subtrahiert (IV = 4, IX = 9).',
+ ['Zerlege die Zahl in Tausender, Hunderter, Zehner, Einer.','Schreibe jeden Teil mit den römischen Zeichen: 900 = CM, 40 = XL, 4 = IV …','Setze alle Teile von groß nach klein zusammen.','Entschlüsseln: von links nach rechts addieren; wenn das nächste Zeichen größer ist, wird das aktuelle abgezogen.'],
+ '1994 = M + CM + XC + IV → <code>MCMXCIV</code>.',
+ 'Das System stammt aus dem antiken Rom und blieb in Europa bis ins Mittelalter üblich. Heute findet man es auf Uhren, bei Jahreszahlen an Gebäuden und bei Kapitelnummern.',
+ 'Kein Geheimcode. Es gibt keine Null und nur Zahlen von 1 bis 3999 (in der Standardschreibung). Beim Entschlüsseln werden nur Großbuchstaben als römische Zahl gelesen – so bleiben normale Wörter unverändert (aber ein einzelnes „I“ wird zur 1).'),
+ params:[],
+ enc(t){const st=[];const out=t.replace(/\d+/g,m=>{const n=+m;if(n<1||n>3999)return m;const r=toRoman(n);st.push({a:m,b:r.s,n:m+' = '+r.parts.join(' + ')+' → '+r.s});return r.s;});return R(out,st);},
+ dec(t){const st=[];const out=t.replace(/\b[IVXLCDM]+\b/g,m=>{const n=fromRoman(m);if(n===null)return m;st.push({a:m,b:String(n),n:m+' wird von links nach rechts addiert bzw. subtrahiert = '+n});return String(n);});return R(out,st);}
+});
+
+add({id:'rot13',name:'ROT13',teaser:'Cäsar-Chiffre mit Verschiebung 13 – verschlüsseln und entschlüsseln sind dasselbe.',example:'Hallo Welt',
+ ...X('ROT13 ersetzt jeden Buchstaben durch den, der 13 Stellen weiter im Alphabet steht. Weil das Alphabet 26 Buchstaben hat, ist zweimaliges Anwenden wieder der Ausgangstext.',
+ ['Zähle 13 Buchstaben weiter: A→N, B→O … M→Z, N→A, O→B …','Kleinbuchstaben bleiben klein, Großbuchstaben groß; alles andere bleibt unverändert.','Zum Entschlüsseln dasselbe noch einmal – ROT13 ist sein eigenes Gegenstück.'],
+ '„Hallo“ → <code>Unyyb</code>.',
+ 'ROT13 wurde in den 1980ern im Usenet populär, um Spoiler, Pointen oder Lösungen von Rätseln zu „verhüllen“. Auf Geocaching-Seiten werden Hinweise („Hint“) damit verschlüsselt (Entschlüsselungsschlüssel A–M / N–Z).',
+ 'Absolut keine Sicherheit – ein reiner Sichtschutz. Typisch für Geocaching-Hinweise.'),
+ params:[],
+ enc(t){const st=[];for(const ch of t)if(/[A-Za-z]/.test(ch)&&st.length<60){const o=caesarShift(ch,13);st.push({a:ch,b:o,n:ch+' + 13 Stellen = '+o});}return R(caesarShift(t,13),st);},
+ dec(t){const st=[];for(const ch of t)if(/[A-Za-z]/.test(ch)&&st.length<60){const o=caesarShift(ch,13);st.push({a:ch,b:o,n:ch+' ± 13 Stellen = '+o+' (ROT13 ist symmetrisch)'});}return R(caesarShift(t,13),st);}
+});
+
+add({id:'rot18',name:'ROT18',teaser:'ROT13 für Buchstaben + ROT5 für Ziffern.',example:'Treffpunkt 12:30',
+ ...X('ROT18 ist die Kombination aus ROT13 (für Buchstaben) und ROT5 (für Ziffern). So werden auch Zahlen verändert, und das Verfahren bleibt trotzdem symmetrisch.',
+ ['Buchstaben: 13 Stellen im Alphabet weiter.','Ziffern: 5 Stellen weiter, also 0↔5, 1↔6, 2↔7, 3↔8, 4↔9.','Andere Zeichen bleiben stehen.','Zum Entschlüsseln: dasselbe Verfahren noch einmal anwenden.'],
+ '„Zug 12“ → <code>Mht 67</code>.',
+ 'ROT18 ist eine Erfindung der Rätselcommunity; es gibt keine historische Anwendung. Der Name entsteht aus 13 + 5 = 18.',
+ 'Keine Verschlüsselung, nur Sichtschutz.'),
+ params:[],
+ enc(t){const st=[];for(const ch of t)if(/[A-Za-z0-9]/.test(ch)&&st.length<60){const o=/\d/.test(ch)?rot5(ch):caesarShift(ch,13);st.push({a:ch,b:o,n:ch+' → '+o+(/\d/.test(ch)?' (Ziffer: +5)':' (Buchstabe: +13)')});}return R(rot5(caesarShift(t,13)),st);},
+ dec(t){return R(rot5(caesarShift(t,13)),[{a:'ROT18',b:'ROT18',n:'ROT18 ist symmetrisch – dasselbe Verfahren noch einmal ergibt den Klartext'}]);}
+});
+
+add({id:'rot47',name:'ROT47',teaser:'Rotation über 94 druckbare ASCII-Zeichen.',example:'Hallo Welt 2026!',
+ ...X('ROT47 dreht nicht nur Buchstaben, sondern alle 94 sichtbaren ASCII-Zeichen (von „!“ bis „~“) um 47 Stellen. Dadurch werden auch Ziffern und Satzzeichen verändert.',
+ ['Nimm die ASCII-Nummer des Zeichens (nur 33–126).','Addiere 47; liegt das Ergebnis über 126, ziehe 94 ab.','Ersetze das Zeichen durch das mit der neuen Nummer.','Zum Entschlüsseln: dasselbe noch einmal (47 + 47 = 94).'],
+ '„A“ (65) → 65 + 47 = 112 → <code>p</code>.',
+ 'ROT47 wurde als Erweiterung von ROT13 beliebt, weil es auch Sonderzeichen und Zahlen abdeckt. Leerzeichen bleiben unverändert.',
+ 'Reiner Sichtschutz. Typisch: Ergebnis enthält viele Zeichen wie @, #, % und Kleinbuchstaben.'),
+ params:[],
+ enc(t){const st=[];for(const ch of t)if(/[!-~]/.test(ch)&&st.length<60){const o=rot47(ch);st.push({a:ch,b:o,n:ch+' (Nr. '+ch.charCodeAt(0)+') + 47 → Nr. '+o.charCodeAt(0)+' = '+o});}return R(rot47(t),st);},
+ dec(t){return R(rot47(t),[{a:'ROT47',b:'ROT47',n:'ROT47 ist symmetrisch – dasselbe Verfahren noch einmal ergibt den Klartext'}]);}
+});
+
+add({id:'rot5',name:'ROT5',teaser:'Ziffern um 5 verschieben.',example:'Zahl 2026 und 0815',
+ ...X('ROT5 ist die Zahlen-Variante von ROT13: Jede Ziffer wird um 5 Stellen im Zahlenkreis 0–9 verschoben. Weil 5 + 5 = 10 ist, genügt eine zweite Anwendung zum Zurückrechnen.',
+ ['Addiere 5 zur Ziffer; bei einem Ergebnis ab 10 ziehst du 10 ab.','Buchstaben und Sonderzeichen bleiben unverändert.','Entschlüsseln: nochmals ROT5.'],
+ '„2026“ → <code>7571</code>.',
+ 'ROT5 ist selten allein und wird meist mit ROT13 zu ROT18 kombiniert.',
+ 'Reiner Sichtschutz. Nur 10 Ziffern – trivial zu knacken.'),
+ params:[],
+ enc(t){const st=[];for(const ch of t)if(/\d/.test(ch)&&st.length<60){const o=rot5(ch);st.push({a:ch,b:o,n:ch+' + 5 = '+o+' (modulo 10)'});}return R(rot5(t),st);},
+ dec(t){return R(rot5(t),[{a:'ROT5',b:'ROT5',n:'ROT5 ist symmetrisch – dasselbe Verfahren noch einmal ergibt den Klartext'}]);}
+});
+
+add({id:'scrabble',name:'Scrabble-Wert',teaser:'Wörter mit den Punktwerten des Scrabble-Spiels.',example:'Quiz Haus Zeit',
+ ...X('Jeder Buchstabe hat im Scrabble einen Punktwert: Häufige Buchstaben wie E, N, I zählen 1, seltene wie Q oder Y viel mehr. Der Scrabble-Wert eines Wortes ist die Summe seiner Buchstabenwerte.',
+ ['Schlage die Punktwerte der Buchstaben in der Tabelle der gewählten Sprache nach.','Schreibe die Einzelwerte auf.','Addiere sie zum Wortwert.','Auf Wunsch kann man daraus die Quersumme bilden.'],
+ 'Deutsch: „HAUS“ = H2 + A1 + U1 + S1 = 5.',
+ 'Scrabble wurde 1938 von Alfred Mosher Butts erfunden. Die Werte folgen der Häufigkeit der Buchstaben in der jeweiligen Sprache – deshalb unterscheiden sie sich zwischen Deutsch und Englisch.',
+ 'Es handelt sich um eine Berechnung, nicht um eine umkehrbare Verschlüsselung: Aus der Summe lässt sich das Wort nicht rekonstruieren.'),
+ params:[{id:'lang',label:'Sprache',type:'select',def:'de',opts:[['de','Deutsch'],['en','Englisch']]}],
+ enc(t,p){const V=p.lang==='en'?{A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10}:{A:1,B:3,C:4,D:1,E:1,F:4,G:2,H:2,I:1,J:6,K:4,L:2,M:3,N:1,O:2,P:4,Q:10,R:1,S:1,T:1,U:1,V:6,W:3,X:8,Y:10,Z:3,Ä:6,Ö:8,Ü:6};
+  const st=[];let total=0;const lines=t.toUpperCase().replace(/ß/g,'SS').split(/\s+/).filter(Boolean).map(w=>{const ls=[...w].filter(c=>V[c]!==undefined&&(p.lang!=='en'||/[A-Z]/.test(c)));if(!ls.length)return null;const vals=ls.map(c=>{st.push({a:c,b:String(V[c]),n:c+' zählt im Scrabble '+V[c]+' Punkte'});return V[c];});const s=vals.reduce((a,b)=>a+b,0);total+=s;return w+': '+vals.join('+')+' = '+s;}).filter(Boolean);
+  return R(lines.join('\n')+(lines.length>1?'\n\nGesamt: '+total:''),st);}
+});
+
+add({id:'skytale',name:'Skytale',teaser:'Die Spartaner-Streifen: Zeilen schreiben, Spalten lesen.',example:'Hilfe die Spartaner kommen',
+ ...X('Die Skytale ist ein Holzstab, um den man einen Lederstreifen wickelt. Man beschreibt den Streifen längs des Stabs; abgewickelt ergibt sich ein durcheinandergewürfelter Buchstabensalat. Nur wer einen Stab mit gleichem Durchmesser hat, kann ihn wieder lesbar machen.',
+ ['Wähle die Zeilenlänge n (Anzahl der Zeichen, die in eine Zeile des Stabs passen).','Schreibe den Text zeilenweise in ein Gitter mit n Spalten; fehlende Felder am Ende werden aufgefüllt.','Lies das Gitter spaltenweise von oben nach unten – das ist der Geheimtext.','Entschlüsseln: den Geheimtext spaltenweise in ein Gitter schreiben und zeilenweise lesen.'],
+ '„HALLOWELT“ mit n = 5: Zeilen HALLO / WELTX → Spalten HW AE LL LT OX → <code>HWAELLLTOX</code>.',
+ 'Die Spartaner nutzten die Skytale schon im 5. Jahrhundert v. Chr. für Militärbotschaften (Plutarch beschreibt sie). Es ist eines der ältesten bekannten Verschlüsselungsgeräte – eine Transposition: die Buchstaben bleiben, nur ihre Reihenfolge ändert sich.',
+ 'Die Häufigkeit der Buchstaben bleibt erhalten, daher leicht zu erkennen (kein Substitutionscode). Mit wenigen Versuchen (alle Zeilenlängen) zu knacken.'),
+ params:[{id:'w',label:'Zeichen pro Zeile (Stabumfang)',type:'number',def:'5',min:2,max:40},{id:'pad',label:'Füllzeichen',type:'text',def:'X'}],
+ enc(t,p){const w=Math.max(2,+p.w||5);const s=t.replace(/\s+/g,'');const pad=(p.pad||'X')[0];const rows=Math.ceil(s.length/w);const g=[];for(let r=0;r<rows;r++){const row=[];for(let c=0;c<w;c++)row.push(s[r*w+c]||pad);g.push(row);}
+  let out='';const st=[];for(let c=0;c<w;c++){let col='';for(let r=0;r<rows;r++)col+=g[r][c];out+=col;st.push({a:'Spalte '+(c+1),b:col,n:'Spalte '+(c+1)+' von oben nach unten gelesen: '+col});}
+  return R(out,st,{html:skyHtml(g)});},
+ dec(t,p){const w=Math.max(2,+p.w||5);const s=t.replace(/\s+/g,'');const rows=Math.ceil(s.length/w);const g=[];for(let r=0;r<rows;r++)g.push(new Array(w).fill(''));let k=0;for(let c=0;c<w;c++)for(let r=0;r<rows;r++)g[r][c]=s[k++]||'';let out='';const st=[];g.forEach((row,r)=>{const line=row.join('');out+=line;st.push({a:'Zeile '+(r+1),b:line,n:'Zeile '+(r+1)+' aus den Spalten wieder zusammengesetzt: '+line});});return R(out,st,{html:skyHtml(g)});}
+});
+function skyHtml(g){return '<table class="g">'+g.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table>';}
+
+add({id:'tapir',name:'TAPIR Substitution',teaser:'Zifferncode der DDR (MfS/NVA): häufige Buchstaben einstellig, andere zweistellig.',example:'Treffen morgen',
+ warn:'Die Original-Tabelle der DDR konnte ich nicht nachprüfen. Aufbau (belegt): häufige Buchstaben einstellig, die übrigen zweistellig, 82 schaltet in den Zahlenmodus, 81 zurück. Die Zuordnung der Buchstaben ist hier nach deutscher Häufigkeit gewählt und im Feld „Buchstabenfolge“ änderbar – trage dort die Folge deiner echten Tabelle ein (die ersten 8 Buchstaben → 0–7, die nächsten 8 → 80, 83–89, die letzten 10 → 90–99).',
+ ...X('TAPIR gehört zu den „Straddling-Checkerboard“-Verfahren: Die häufigsten Buchstaben bekommen nur eine Ziffer (kurz), die seltenen zwei. So wird die Nachricht kürzer, und die Länge des Ziffernstroms verrät weniger über die Buchstaben. Das Verfahren wurde in der DDR vom Ministerium für Staatssicherheit und der NVA benutzt.',
+ ['Wähle die Tabelle: 8 häufige Buchstaben bekommen die Ziffern 0–7.','Alle anderen Buchstaben bekommen zwei Ziffern; die erste Ziffer ist 8 oder 9 (80, 83–89, 90–99).','Die Folge <code>82</code> schaltet in den Zahlenmodus (Ziffern werden unverändert geschrieben), <code>81</code> schaltet zurück in den Buchstabenmodus.','Entschlüsseln: Ziffer für Ziffer lesen – steht eine 8 oder 9 am Anfang, gehört die nächste Ziffer dazu.'],
+ 'Mit der voreingestellten Tabelle: E = 0, N = 1, I = 2 → <code>0 1 2</code>.',
+ 'Ziffernchiffren dieser Art waren im Kalten Krieg üblich, weil sie sich leicht mit Zahlenkolonnen auf Kurzwelle übertragen ließen. Anschließend wurden die Ziffern oft noch mit einem Zahlenschlüssel überlagert.',
+ 'Nur die Zuordnungstabelle ist geheim – ohne weitere Überschlüsselung ist das Verfahren nicht sicher.'),
+ params:[{id:'order',label:'Buchstabenfolge (26 Buchstaben)',type:'text',def:'ENISRATDHULCGMOBWFKZPVJYXQ'}],
+ enc(t,p){const T=tapirTable(p.order);const st=[];let mode='L';const out=[];
+  for(const ch of norm(t)){
+    if(/[0-9]/.test(ch)){if(mode!=='F'){out.push('82');st.push({a:'⇧',b:'82',n:'82 schaltet in den Zahlenmodus'});mode='F';}out.push(ch);st.push({a:ch,b:ch,n:'Im Zahlenmodus wird die Ziffer unverändert geschrieben'});}
+    else if(/[A-Z]/.test(ch)){if(mode!=='L'){out.push('81');st.push({a:'⇧',b:'81',n:'81 schaltet zurück in den Buchstabenmodus'});mode='L';}out.push(T.enc[ch]);st.push({a:ch,b:T.enc[ch],n:ch+' hat in der Tabelle den Code '+T.enc[ch]});}
+  }
+  return R(out.join(' '),st,{html:'<details><summary>Verwendete Tabelle</summary><pre style="font-size:13px;columns:2">'+Object.keys(T.dec).sort().map(k=>k.padEnd(3)+' '+T.dec[k]).join('\n')+'\n81  → Buchstaben\n82  → Zahlen</pre></details>'});},
+ dec(t,p){const T=tapirTable(p.order);const d=t.replace(/[^0-9]/g,'');let mode='L',out='';const st=[];
+  for(let i=0;i<d.length;){
+    if(mode==='F'){if(d.slice(i,i+2)==='81'){mode='L';i+=2;st.push({a:'81',b:'⇧',n:'81: zurück zu Buchstaben'});}else{out+=d[i];st.push({a:d[i],b:d[i],n:'Zahlenmodus: Ziffer bleibt Ziffer'});i++;}continue;}
+    const c=d[i];
+    if(c==='8'||c==='9'){const two=d.slice(i,i+2);if(two==='82'){mode='F';i+=2;st.push({a:'82',b:'⇧',n:'82: Zahlenmodus beginnt'});continue;}if(two==='81'){i+=2;continue;}const ch=T.dec[two]||'?';out+=ch;st.push({a:two,b:ch,n:two+' = '+ch});i+=2;}
+    else{const ch=T.dec[c]||'?';out+=ch;st.push({a:c,b:ch,n:c+' = '+ch+' (einstellig)'});i++;}
+  }
+  return R(out,st);}
+});
+
+add({id:'vigenere',name:'Vigenère',teaser:'Polyalphabetische Chiffre mit Schlüsselwort – lange „le chiffre indéchiffrable“.',example:'bitte test 1234',
+ ...X('Vigenère verwendet statt einer festen Verschiebung (wie bei Cäsar) für jeden Buchstaben eine andere – bestimmt durch ein Schlüsselwort. Dadurch verschwindet die typische Buchstabenhäufigkeit.',
+ ['Wähle ein Schlüsselwort, z. B. „ZT“ (Z = 25, T = 19).','Schreibe das Schlüsselwort wiederholt unter den Text: B I T T E / Z T Z T Z.','Verschiebe jeden Klartextbuchstaben um den Wert des darunterstehenden Schlüsselbuchstabens (A = 0 … Z = 25).','Bei den Optionen unten entscheidest du, ob Leer-, Satz- und Sonderzeichen Schlüsselbuchstaben „verbrauchen“ und ob auch Ziffern verschlüsselt werden (um den Schlüsselwert modulo 10).','Entschlüsseln: den Schlüsselwert abziehen.'],
+ 'Text „bitte test 1234“, Schlüssel „zt“ → <code>absmd mdls 1234</code>.',
+ 'Benannt nach Blaise de Vigenère (16. Jh.), erfunden jedoch von Giovan Battista Bellaso (1553). Fast 300 Jahre galt sie als unknackbar, bis Friedrich Kasiski 1863 und Charles Babbage sie brachen. Man bestimmt zuerst die Schlüssellänge (Kasiski-Test, Koinzidenzindex) und löst dann jede Spalte als Cäsar.',
+ 'Bei kurzem Schlüssel und langem Text knackbar. Je länger der Schlüssel und je weniger er sich wiederholt, desto sicherer – ein Schlüssel so lang wie der Text, einmalig und zufällig, wäre ein One-Time-Pad.'),
+ params:[{id:'key',label:'Schlüssel (Buchstaben)',type:'text',def:'zt'},{id:'consume',label:'Leer-, Satz- und Sonderzeichen „verbrauchen“ Schlüsselbuchstaben',type:'check',def:false},{id:'alnum',label:'Alphanumerische Zeichen erlauben (Ziffern werden mitverschlüsselt)',type:'check',def:false}],
+ enc(t,p){return vig(t,p,1);},dec(t,p){return vig(t,p,-1);}
+});
+function vig(t,p,sg){
+  const key=(p.key||'').toUpperCase().replace(/[^A-Z]/g,'');if(!key)return R('⚠ Bitte einen Schlüssel eingeben (nur Buchstaben A–Z).');
+  let ki=0,out='';const st=[];
+  for(const ch of t){
+    let done=false;
+    if(/[A-Za-z]/.test(ch)){const kc=key[ki%key.length];const k=kc.charCodeAt(0)-65;const base=ch>='a'?97:65;const o=String.fromCharCode(mod(ch.charCodeAt(0)-base+sg*k,26)+base);out+=o;if(st.length<60)st.push({a:ch,b:o,n:ch+' '+(sg>0?'+':'−')+' Schlüsselbuchstabe '+kc+' ('+k+') = '+o});ki++;done=true;}
+    else if(p.alnum&&/[0-9]/.test(ch)){const kc=key[ki%key.length];const k=(kc.charCodeAt(0)-65)%10;const o=String(mod(+ch+sg*k,10));out+=o;if(st.length<60)st.push({a:ch,b:o,n:'Ziffer '+ch+' '+(sg>0?'+':'−')+' ('+kc+' = '+(kc.charCodeAt(0)-65)+', mod 10 = '+k+') = '+o});ki++;done=true;}
+    if(!done){out+=ch;if(p.consume)ki++;}
+  }
+  return R(out,st);
+}
+
+// =====================================================================
+//  Oberfläche
+// =====================================================================
+if(typeof document!=='undefined'){
+const $=id=>document.getElementById(id);
+let cur=M[0],dir='enc',P={},tl=[],ti=0,timer=null,last=null,audio=null;
+const ui={input:()=>$('inp').value,setParam:(id,v)=>{P[cur.id][id]=v;const el=document.querySelector('[data-p="'+id+'"]');if(el)el.value=v;run();},
+ playMorse(text){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();let t0=audio.currentTime+0.1;const u=0.08;
+  const beep=(d)=>{const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=620;g.gain.value=0.2;o.connect(g);g.connect(audio.destination);o.start(t0);o.stop(t0+d);t0+=d;};
+  for(const c of text.replace(/[•·]/g,'.').replace(/[−–—]/g,'-')){if(c==='.'){beep(u);t0+=u;}else if(c==='-'){beep(u*3);t0+=u;}else if(c===' '){t0+=u*2;}else if(c==='/'){t0+=u*4;}}}catch(e){$('msg').textContent='Ton nicht verfügbar.';}}};
+
+function build(){
+  const list=$('list');list.innerHTML='';const sel=$('sel');sel.innerHTML='';
+  M.forEach(m=>{const b=document.createElement('button');b.textContent=m.name;b.dataset.id=m.id;b.onclick=()=>choose(m.id);list.appendChild(b);const o=document.createElement('option');o.value=m.id;o.textContent=m.name;sel.appendChild(o);});
+  sel.onchange=()=>choose(sel.value);
+  $('q').oninput=()=>{const q=$('q').value.toLowerCase();[...list.children].forEach(b=>b.style.display=b.textContent.toLowerCase().includes(q)?'':'none');};
+}
+function choose(id){
+  stop();cur=M.find(m=>m.id===id)||M[0];location.hash=cur.id;
+  [...$('list').children].forEach(b=>b.classList.toggle('on',b.dataset.id===cur.id));$('sel').value=cur.id;
+  $('title').textContent=cur.name;$('teaser').textContent=cur.teaser;$('warn').innerHTML=cur.warn?'<div class="warn">⚠ '+cur.warn+'</div>':'';
+  $('expl').innerHTML='<h2>📖 Ausführliche Erklärung</h2>'+cur.html;
+  if(!P[cur.id]){P[cur.id]={};(cur.params||[]).forEach(p=>P[cur.id][p.id]=p.def);}
+  const box=$('params');box.innerHTML='';
+  (cur.params||[]).forEach(p=>{
+    if(p.type==='check'){const l=document.createElement('label');l.className='chk';const c=document.createElement('input');c.type='checkbox';c.checked=!!P[cur.id][p.id];c.dataset.p=p.id;c.onchange=()=>{P[cur.id][p.id]=c.checked;run();};l.appendChild(c);l.appendChild(document.createTextNode(p.label));box.appendChild(l);return;}
+    const w=document.createElement('div');const l=document.createElement('label');l.textContent=p.label;w.appendChild(l);let el;
+    if(p.type==='select'){el=document.createElement('select');p.opts.forEach(o=>{const op=document.createElement('option');op.value=o[0];op.textContent=o[1];el.appendChild(op);});}
+    else{el=document.createElement('input');el.type=p.type==='number'?'number':'text';if(p.min!==undefined)el.min=p.min;if(p.max!==undefined)el.max=p.max;}
+    el.value=P[cur.id][p.id];el.dataset.p=p.id;el.oninput=el.onchange=()=>{P[cur.id][p.id]=el.value;run();};w.appendChild(el);box.appendChild(w);
+  });
+  const acts=$('acts');acts.innerHTML='';(cur.actions||[]).forEach(a=>{const b=document.createElement('button');b.className='b';b.textContent=a.label;b.onclick=()=>a.fn(last||{out:''},ui);acts.appendChild(b);});
+  setDir(cur.dir||'enc',true);
+  if(!$('inp').value&&cur.example)$('inp').value=cur.example;
+  run();
+}
+function setDir(d,silent){
+  if(d==='enc'&&!cur.enc)d='dec';if(d==='dec'&&!cur.dec)d='enc';dir=d;
+  $('bEnc').classList.toggle('on',d==='enc');$('bDec').classList.toggle('on',d==='dec');
+  $('bEnc').disabled=!cur.enc;$('bDec').disabled=!cur.dec;
+  if(!silent)run();
+}
+function run(){
+  const fn=dir==='enc'?cur.enc:cur.dec;let res;
+  try{res=fn?fn($('inp').value,P[cur.id]):R('');}catch(e){res=R('⚠ Fehler: '+e.message);}
+  last=res;$('out').textContent=res.out;$('extra').innerHTML=res.html||'';
+  const slides=(cur.how||[]).map((t,i)=>({type:'text',t:t,i:i+1,n:cur.how.length}));
+  const data=(res.steps||[]).slice(0,60).map(s=>({type:'data',a:s.a,b:s.b,n:s.n}));
+  tl=[{type:'intro'}].concat(slides,data);ti=0;stop();show();
+}
+function esc2(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function show(){
+  const s=tl[ti];let h='';
+  if(s.type==='intro')h='<div class="tag">'+(dir==='enc'?'Verschlüsseln':'Entschlüsseln')+'</div><div class="big" style="font-family:inherit">'+esc2(cur.name)+'</div><div class="note">'+esc2(cur.teaser)+'</div><div class="tag">▶ Drücke „Abspielen“</div>';
+  else if(s.type==='text')h='<div class="tag">Schritt '+s.i+' von '+s.n+' – die Idee</div><div class="note" style="font-size:21px">'+s.t+'</div>';
+  else h='<div class="tag">dein Text, Schritt '+(ti-(cur.how||[]).length)+' von '+(tl.length-1-(cur.how||[]).length)+'</div><div class="big">'+esc2(s.a)+'</div><div class="arrow">↓</div><div class="big" style="color:#c9e68a">'+esc2(s.b)+'</div><div class="note">'+esc2(s.n||'')+'</div>';
+  $('stage').innerHTML=h;$('prog').style.width=(tl.length>1?ti/(tl.length-1)*100:100)+'%';
+  if($('tSpeak').checked&&window.speechSynthesis){speechSynthesis.cancel();const txt=s.type==='intro'?cur.name+'. '+cur.teaser:(s.type==='text'?s.t.replace(/<[^>]+>/g,''):(s.n||''));const u=new SpeechSynthesisUtterance(txt);u.lang='de-DE';speechSynthesis.speak(u);}
+}
+function stop(){if(timer){clearInterval(timer);timer=null;}$('tPlay').textContent='▶ Abspielen';if(window.speechSynthesis)speechSynthesis.cancel();}
+function play(){if(timer){stop();return;}if(ti>=tl.length-1)ti=0;show();$('tPlay').textContent='⏸ Pause';timer=setInterval(()=>{if(ti>=tl.length-1){stop();return;}ti++;show();},+$('tSpeed').value);}
+$('tPlay').onclick=play;$('tNext').onclick=()=>{if(ti<tl.length-1){ti++;show();}};$('tPrev').onclick=()=>{if(ti>0){ti--;show();}};
+$('tSpeed').onchange=()=>{if(timer){stop();play();}};
+$('bEnc').onclick=()=>setDir('enc');$('bDec').onclick=()=>setDir('dec');
+$('bEx').onclick=()=>{$('inp').value=cur.example||'';run();};
+$('bSwap').onclick=()=>{$('inp').value=$('out').textContent;setDir(dir==='enc'?'dec':'enc');};
+$('inp').oninput=run;
+$('bCopy').onclick=()=>{navigator.clipboard.writeText($('out').textContent).then(()=>{$('msg').textContent='Kopiert ✓';setTimeout(()=>$('msg').textContent='',1500);},()=>{$('msg').textContent='Kopieren nicht möglich.';});};
+build();choose((location.hash||'').slice(1)||M[0].id);
+}
+if(typeof module!=='undefined')module.exports={M,telegraphEnc,DECABIT,bword,wscore,bfRun,bfGenerate};
+</script>
+</body>
+</html>
